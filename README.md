@@ -12,7 +12,7 @@
 
 ## 系统框架
 
-<center><img src='模型框架.jpg' width=1060></img></center>
+<center><img src='doc\模型框架.jpg' width=1060></img></center>
 
 1.系统需要获取股价信息，包括基本面、技术指标、财经新闻、上市公司财报和金融银行拆借利率等信息。训练模型使用90%训练集，9%交叉验证，1%测试。应用模型使用95%训练，5%验证，生成5%预测数据。
 
@@ -62,81 +62,81 @@ stream2 直接进到boost的数据，90%训练，9%验证，1%测试。
 ### 数据获取
 get_stock_data.py:获取股票数据
 
-1.GetStockList():获取股票基本信息：股票列表、上市公司基本信息
+1.getStockList():获取股票基本信息：股票列表、上市公司基本信息
 
-2.GetStockMarket():获取股票行情：代码、交易日、开盘价、收盘价、最高价、最低价、昨收价、涨跌幅、成交量、成交额
+2.getStockMarket():获取股票行情：代码、交易日、开盘价、收盘价、最高价、最低价、昨收价、涨跌幅、成交量、成交额
 
-3.GetDailyIndicator():获取每日指标：股票代码、交易日期、收盘价、换手率、量比、市盈率、市净率、市销率、总股本、流通股本、市值、流通市值。
+3.getDailyIndicator():获取每日指标：股票代码、交易日期、收盘价、换手率、量比、市盈率、市净率、市销率、总股本、流通股本、市值、流通市值。
 
-4.GetStockCurrent():个股资金流向:股票代码、交易日期、小单买入量（手）、小单买入金额（万元）、小单卖出量（手）、小单卖出金额（万元）、中单买入量（手）、中单买入金额（万元）、中单卖出量（手）、中单卖出金额（万元）、大单买入量（手）、大单买入金额（万元）、大单卖出量（手）、大单卖出金额（万元）、特大单买入量（手）、特大单买入金额（万元）、特大单卖出量（手）、特大单卖出金额（万元）、净流入量（手）、净流入额（万元）
+4.getStockCurrent():个股资金流向:股票代码、交易日期、小单买入量（手）、小单买入金额（万元）、小单卖出量（手）、小单卖出金额（万元）、中单买入量（手）、中单买入金额（万元）、中单卖出量（手）、中单卖出金额（万元）、大单买入量（手）、大单买入金额（万元）、大单卖出量（手）、大单卖出金额（万元）、特大单买入量（手）、特大单买入金额（万元）、特大单卖出量（手）、特大单卖出金额（万元）、净流入量（手）、净流入额（万元）
 
 get_stock_finance.py：获取财务数据 API参考tushare
 
-1.GetProfit():获取上市公司财务利润 https://tushare.pro/document/2?doc_id=33
+1.getProfit():获取上市公司财务利润
 
-2.GetBalanceSheet():获取上市公司资产负债表 https://tushare.pro/document/2?doc_id=36
+2.getBalanceSheet():获取上市公司资产负债表
 
-3.GetCashflow():获取上市公司现金流量表 https://tushare.pro/document/2?doc_id=44
+3.getCashflow():获取上市公司现金流量表
 
-4.GetForecast():获取业绩预告数据 https://tushare.pro/document/2?doc_id=45
+4.getForecast():获取业绩预告数据
 
-5.GetExpress():获取上市公司业绩快报 https://tushare.pro/document/2?doc_id=46
+5.getExpress():获取上市公司业绩快报
 
-6.GetDividend():获取分红送股：https://tushare.pro/document/2?doc_id=103
+6.getDividend():获取分红送股
 
-7.GetFinacialIndicator():获取上市公司财务指标数据 https://tushare.pro/document/2?doc_id=79
+7.getFinacialIndicator():获取上市公司财务指标数据 
 
-8.GetFinacialAudit():获取上市公司定期财务审计意见数据 https://tushare.pro/document/2?doc_id=80
+8.getFinacialAudit():获取上市公司定期财务审计意见数据 
 
-9.GetFinacialMain():获得上市公司主营业务构成，分地区和产品两种方式 https://tushare.pro/document/2?doc_id=81
+9.getFinacialMain():获得上市公司主营业务构成，分地区和产品两种方式
 
 get_market_reference.py:获取市场参考数据
 
-1.GetMoneyflow_HSGT():获取沪股通、深股通、港股通每日资金流向数据，每次最多返回300条记录，总量不限制 https://tushare.pro/document/2?doc_id=47
+1.getMoneyflow_HSGT():获取沪股通、深股通、港股通每日资金流向数据，每次最多返回300条记录，总量不限制 
 
-2.GetSecuritiesMarginTrading():获取融资融券每日交易汇总数据 https://tushare.pro/document/2?doc_id=58
+2.getSecuritiesMarginTrading():获取融资融券每日交易汇总数据 
 
-3.GetPledgeState():获取股权质押统计数据 https://tushare.pro/document/2?doc_id=110
+3.getPledgeState():获取股权质押统计数据 
 
-4.GetRepurchase():获取上市公司回购股票数据 https://tushare.pro/document/2?doc_id=124
+4.getRepurchase():获取上市公司回购股票数据
 
-5.GetDesterilization():获取限售股解禁 https://tushare.pro/document/2?doc_id=160
+5.getDesterilization():获取限售股解禁 
 
-6.GetBlockTrade():获取大宗交易 https://tushare.pro/document/2?doc_id=161
+6.getBlockTrade():获取大宗交易 
 
-7.GetStockHolder():获取上市公司增减持数据，了解重要股东近期及历史上的股份增减变化 https://tushare.pro/document/2?doc_id=175
+7.getStockHolder():获取上市公司增减持数据，了解重要股东近期及历史上的股份增减变化 
 
 get_index.py:获取指数
 
-1.GetIndexBasic():获取指数基础信息。 https://tushare.pro/document/2?doc_id=94
+1.getIndexBasic():获取指数基础信息。
 
-2.GetIndexDaily():获取指数每日行情，还可以通过bar接口获取。  https://tushare.pro/document/2?doc_id=95
+2.getIndexDaily():获取指数每日行情，还可以通过bar接口获取。  
 
-3.GetIndexWeight():获取各类指数成分和权重，月度数据  https://tushare.pro/document/2?doc_id=96
+3.getIndexWeight():获取各类指数成分和权重，月度数据  
 
-4.GetStockMarketIndex():上证综指指标数据 https://tushare.pro/document/2?doc_id=128
+4.getStockMarketIndex():上证综指指标数据
 
 get_interest_indicator.py
 
-1.GetShibor():上海银行间同业拆放利率（Shanghai Interbank Offered Rate，简称Shibor），以位于上海的全国银行间同业拆借中心为技术平台计算、发布并命名，是由信用等级较高的银行组成报价团自主报出的人民币同业拆出利率计算确定的算术平均利率，是单利、无担保、批发性利率。https://tushare.pro/document/2?doc_id=149
+1.getShibor():上海银行间同业拆放利率（Shanghai Interbank Offered Rate，简称Shibor），以位于上海的全国银行间同业拆借中心为技术平台计算、发布并命名，是由信用等级较高的银行组成报价团自主报出的人民币同业拆出利率计算确定的算术平均利率，是单利、无担保、批发性利率。
 
-2.GetShiborQuote():Shibor报价数据 https://tushare.pro/document/2?doc_id=150
+2.getShiborQuote():Shibor报价数据 
 
-3.GetShibor_LPR():贷款基础利率（Loan Prime Rate，简称LPR），是基于报价行自主报出的最优贷款利率计算并发布的贷款市场参考利率。目前，对社会公布1年期贷款基础利率。 https://tushare.pro/document/2?doc_id=151
+3.getShibor_LPR():贷款基础利率（Loan Prime Rate，简称LPR），是基于报价行自主报出的最优贷款利率计算并发布的贷款市场参考利率。目前，对社会公布1年期贷款基础利率。 
 
-4.GetLibor():Libor（London Interbank Offered Rate ），即伦敦同业拆借利率，是指伦敦的第一流银行之间短期资金借贷的利率，是国际金融市场中大多数浮动利率的基础利率。 https://tushare.pro/document/2?doc_id=152
+4.getLibor():Libor（London Interbank Offered Rate ），即伦敦同业拆借利率，是指伦敦的第一流银行之间短期资金借贷的利率，是国际金融市场中大多数浮动利率的基础利率。 
 
-5.GetHibor():HIBOR (Hongkong InterBank Offered Rate)，是香港银行同行业拆借利率。指香港货币市场上，银行与银行之间的一年期以下的短期资金借贷利率，从伦敦同业拆借利率（LIBOR）变化出来的。 https://tushare.pro/document/2?doc_id=153
+5.getHibor():HIBOR (Hongkong InterBank Offered Rate)，是香港银行同行业拆借利率。指香港货币市场上，银行与银行之间的一年期以下的短期资金借贷利率，从伦敦同业拆借利率（LIBOR）变化出来的。 
 
-6.GetWenZhouIndex():温州指数 ，即温州民间融资综合利率指数，该指数及时反映民间金融交易活跃度和交易价格。该指数样板数据主要采集于四个方面：由温州市设立的几百家企业测报点，把各自借入的民间资本利率通过各地方金融办不记名申报收集起来；对各小额贷款公司借出的利率进行加权平均；融资性担保公司如典当行在融资过程中的利率，由温州经信委和商务局负责测报；民间借贷服务中心的实时利率。(可选，2012年开放数据)
+6.getWenZhouIndex():温州指数 ，即温州民间融资综合利率指数，该指数及时反映民间金融交易活跃度和交易价格。该指数样板数据主要采集于四个方面：由温州市设立的几百家企业测报点，把各自借入的民间资本利率通过各地方金融办不记名申报收集起来；对各小额贷款公司借出的利率进行加权平均；融资性担保公司如典当行在融资过程中的利率，由温州经信委和商务局负责测报；民间借贷服务中心的实时利率。(可选，2012年开放数据)
 
-7.GetGuangZhouIndex():广州民间借贷利率(可选)
+7.getGuangZhouIndex():广州民间借贷利率(可选)
 
-get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据 https://tushare.pro/document/2?doc_id=143
+get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据 
 
-get_cctv_news.py:获取新闻联播文字稿数据，数据开始于2006年6月，超过12年历史 https://tushare.pro/document/2?doc_id=154
+get_cctv_news.py:获取新闻联播文字稿数据，数据开始于2006年6月，超过12年历史 
 
-get_company_public.py:获取上市公司公告数据及原文文本，数据从2000年开始，内容很大，请注意数据调取节奏。https://tushare.pro/document/2?doc_id=176
+get_company_public.py:获取上市公司公告数据及原文文本，数据从2000年开始，内容很大，请注意数据调取节奏。
 
 
 ## 数据特征工程
