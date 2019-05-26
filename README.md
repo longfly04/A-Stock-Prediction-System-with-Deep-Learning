@@ -60,8 +60,9 @@ stream2 直接进到boost的数据，90%训练，9%验证，1%测试。
 ## 框架功能
 
 ### 数据获取
-get_stock_data.py:获取股票数据
+stock.py:
 
+StockData类：
 1.getStockList():获取股票基本信息：股票列表、上市公司基本信息
 
 2.getStockMarket():获取股票行情：代码、交易日、开盘价、收盘价、最高价、最低价、昨收价、涨跌幅、成交量、成交额
@@ -70,7 +71,7 @@ get_stock_data.py:获取股票数据
 
 4.getStockCurrent():个股资金流向:股票代码、交易日期、小单买入量（手）、小单买入金额（万元）、小单卖出量（手）、小单卖出金额（万元）、中单买入量（手）、中单买入金额（万元）、中单卖出量（手）、中单卖出金额（万元）、大单买入量（手）、大单买入金额（万元）、大单卖出量（手）、大单卖出金额（万元）、特大单买入量（手）、特大单买入金额（万元）、特大单卖出量（手）、特大单卖出金额（万元）、净流入量（手）、净流入额（万元）
 
-get_stock_finance.py：获取财务数据 API参考tushare
+StockFinance类：获取财务数据 API参考tushare
 
 1.getProfit():获取上市公司财务利润
 
@@ -90,7 +91,7 @@ get_stock_finance.py：获取财务数据 API参考tushare
 
 9.getFinacialMain():获得上市公司主营业务构成，分地区和产品两种方式
 
-get_market_reference.py:获取市场参考数据
+Market类:获取市场参考数据
 
 1.getMoneyflow_HSGT():获取沪股通、深股通、港股通每日资金流向数据，每次最多返回300条记录，总量不限制 
 
@@ -106,7 +107,7 @@ get_market_reference.py:获取市场参考数据
 
 7.getStockHolder():获取上市公司增减持数据，了解重要股东近期及历史上的股份增减变化 
 
-get_index.py:获取指数
+Index类:指数
 
 1.getIndexBasic():获取指数基础信息。
 
@@ -116,7 +117,16 @@ get_index.py:获取指数
 
 4.getStockMarketIndex():上证综指指标数据
 
-get_interest_indicator.py
+Futures类：期货
+
+1.getFuturesDaily():获取期货日线
+
+2.getFururesHolding():获取每日成交量
+
+3.getFuturesWSR():获取仓单日报
+
+
+Interes类：利率
 
 1.getShibor():上海银行间同业拆放利率（Shanghai Interbank Offered Rate，简称Shibor），以位于上海的全国银行间同业拆借中心为技术平台计算、发布并命名，是由信用等级较高的银行组成报价团自主报出的人民币同业拆出利率计算确定的算术平均利率，是单利、无担保、批发性利率。
 
@@ -132,11 +142,12 @@ get_interest_indicator.py
 
 7.getGuangZhouIndex():广州民间借贷利率(可选)
 
-get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据 
+News类：获取文本
+1.get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据 
 
-get_cctv_news.py:获取新闻联播文字稿数据，数据开始于2006年6月，超过12年历史 
+2.get_cctv_news.py:获取新闻联播文字稿数据，数据开始于2006年6月，超过12年历史 
 
-get_company_public.py:获取上市公司公告数据及原文文本，数据从2000年开始，内容很大，请注意数据调取节奏。
+3.get_company_public.py:获取上市公司公告数据及原文文本，数据从2000年开始，内容很大，请注意数据调取节奏。
 
 
 ## 数据特征工程
