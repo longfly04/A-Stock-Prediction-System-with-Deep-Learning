@@ -143,11 +143,15 @@ Interes类：利率
 7.getGuangZhouIndex():广州民间借贷利率(可选)
 
 News类：获取文本
-1.get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据 
+get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据 
 
-2.get_cctv_news.py:获取新闻联播文字稿数据，数据开始于2006年6月，超过12年历史 
+1.getNews():新闻资讯数据从2018年10月7日开始有数据 之前没有数据
 
-3.get_company_public.py:获取上市公司公告数据及原文文本，数据从2000年开始，内容很大，请注意数据调取节奏。
+2.getCompanyPublic():上市公司公告 几乎都是空的
+
+3.getCCTVNews():CCTV 接口限制每分钟100次
+
+
 
 
 ## 数据特征工程
