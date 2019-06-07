@@ -9,6 +9,8 @@
 
 数据来源：https://tushare.pro/
 
+For more information ： https://longfly04.github.io/A-Stock-Prediction-System-with-GAN-and-DRL/
+
 
 ## 系统框架
 
@@ -156,6 +158,8 @@ get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据
 
 ## 数据特征工程
 
+### 思路
+
 股价特征作为标签y，指的是：开盘价、收盘价、最高价、最低价，这几个价格的组合。这样定义标签可以么？
 
 1.数据存储为csv文件，由于指标特征类数据需要做归一化，则指标类数据中的文本数据需要做枚举并映射。
@@ -170,22 +174,18 @@ get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据
 
 6.降维之后的特征，送GAN模型。
 
+## 技术指标
+
+1.技术指标 technical indicator 需要通过技术指标反映出股价的相关统计信息，并作为股价的参数
+
+2.统计数据 statistical data 股价的统计数据也作为可视化和股价参数
+
+3.通过自编码器之后的向量
+
 
 
 ### 训练模型
 
-1.GAN
-
-
-2.LSTM
-
-
-
-3.CNN
-
-
-
-4.DQN
 
 
 
