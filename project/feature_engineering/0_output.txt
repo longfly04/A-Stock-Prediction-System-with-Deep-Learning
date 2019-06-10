@@ -1,0 +1,170 @@
+                             ARIMA Model Results
+==============================================================================
+Dep. Variable:            D.close_x_x   No. Observations:                 2691
+Model:                 ARIMA(5, 1, 0)   Log Likelihood               -2416.039
+Method:                       css-mle   S.D. of innovations              0.594
+Date:                Mon, 10 Jun 2019   AIC                           4846.078
+Time:                        08:37:14   BIC                           4887.362
+Sample:                             1   HQIC                          4861.010
+
+=====================================================================================
+                        coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------
+const                -0.0038      0.011     -0.360      0.719      -0.024       0.017
+ar.L1.D.close_x_x     0.0273      0.019      1.419      0.156      -0.010       0.065
+ar.L2.D.close_x_x    -0.0327      0.019     -1.697      0.090      -0.070       0.005
+ar.L3.D.close_x_x    -0.0284      0.019     -1.473      0.141      -0.066       0.009
+ar.L4.D.close_x_x    -0.0238      0.019     -1.235      0.217      -0.062       0.014
+ar.L5.D.close_x_x    -0.0319      0.019     -1.654      0.098      -0.070       0.006
+                                    Roots
+=============================================================================
+                  Real          Imaginary           Modulus         Frequency
+-----------------------------------------------------------------------------
+AR.1            1.3883           -1.2150j            1.8449           -0.1144
+AR.2            1.3883           +1.2150j            1.8449            0.1144
+AR.3           -2.1397           -0.0000j            2.1397           -0.5000
+AR.4           -0.6919           -1.9573j            2.0760           -0.3041
+AR.5           -0.6919           +1.9573j            2.0760            0.3041
+-----------------------------------------------------------------------------
+Test MSE: 0.169
+1.数据集共有2692个样本，305个特征。
+2.数据集基本信息：
+           cal_date  trade_date_x_x         open         high          low    close_x_x  ...     m12_rate    long_rate      fft_real      fft_imag      absolute        angle
+count  2.692000e+03    2.692000e+03  2692.000000  2692.000000  2692.000000  2692.000000  ...  1466.000000  1466.000000   2692.000000  2.692000e+03   2692.000000  2692.000000
+mean   2.013063e+07    2.013056e+07    15.359588    15.660152    15.075936    15.384547  ...    15.149645    15.443554     24.030000 -2.702807e-15     81.749725     0.000000
+std    3.169659e+04    3.164163e+04     5.772266     5.895862     5.635722     5.773836  ...     1.423652     2.074771    809.677972  2.664179e+02    848.792702     1.600081
+min    2.008010e+07    2.008010e+07     7.210000     7.400000     6.900000     7.210000  ...    11.130000     8.230000  -2245.516273 -7.352694e+03      0.495487    -3.140548
+25%    2.010093e+07    2.010093e+07    10.447500    10.637500    10.270000    10.460000  ...    14.060000    14.190000     -6.762985 -1.277036e+01     12.943452    -1.228139
+50%    2.013071e+07    2.013071e+07    13.855000    14.110000    13.630000    13.855000  ...    15.015000    15.485000      5.148885  0.000000e+00     21.988086     0.000000
+75%    2.016041e+07    2.016041e+07    19.052500    19.532500    18.702500    19.110000  ...    16.220000    16.647500     18.087368  1.277036e+01     40.812871     1.228139
+max    2.018123e+07    2.018123e+07    32.440000    32.980000    31.610000    32.200000  ...    19.720000    24.240000  41415.200000  7.352694e+03  41415.200000     3.140548
+
+[8 rows x 305 columns]
+3.数据集包含空值情况统计：
+cal_date               0
+trade_date_x_x         0
+open                   0
+high                   0
+low                    0
+close_x_x              0
+pre_close              0
+change                 0
+pct_chg                0
+vol                    0
+amount                 0
+turnover_rate          0
+turnover_rate_f        0
+volume_ratio           0
+pe                     0
+pe_ttm                 0
+pb                     0
+ps                     0
+ps_ttm                 0
+total_share_x          0
+float_share_x          0
+free_share             0
+total_mv               0
+circ_mv                0
+trade_date_x_x.1       0
+buy_sm_vol             0
+buy_sm_amount          0
+sell_sm_vol            0
+sell_sm_amount         0
+buy_md_vol             0
+                    ...
+2m_x                   0
+3m_y                   0
+6m_y                   0
+12m_x                  0
+date_x.2               0
+on                     0
+1w                     0
+2w_y                   0
+1m                     0
+2m_y                   0
+3m                     0
+6m                     0
+12m_y                  0
+date_y.2            1226
+comp_rate           1226
+center_rate         1226
+micro_rate          1226
+cm_rate             1226
+sdb_rate            1226
+om_rate             1226
+aa_rate             1384
+m1_rate             1226
+m3_rate             1226
+m6_rate             1226
+m12_rate            1226
+long_rate           1226
+fft_real               0
+fft_imag               0
+absolute               0
+angle                  0
+Length: 305, dtype: int64
+4.数据集特征和数据类型情况：
+                 Data Type
+cal_date           float64
+trade_date_x_x     float64
+open               float64
+high               float64
+low                float64
+close_x_x          float64
+pre_close          float64
+change             float64
+pct_chg            float64
+vol                float64
+amount             float64
+turnover_rate      float64
+turnover_rate_f    float64
+volume_ratio       float64
+pe                 float64
+pe_ttm             float64
+pb                 float64
+ps                 float64
+ps_ttm             float64
+total_share_x      float64
+float_share_x      float64
+free_share         float64
+total_mv           float64
+circ_mv            float64
+trade_date_x_x.1   float64
+buy_sm_vol         float64
+buy_sm_amount      float64
+sell_sm_vol        float64
+sell_sm_amount     float64
+buy_md_vol         float64
+...                    ...
+2m_x               float64
+3m_y               float64
+6m_y               float64
+12m_x              float64
+date_x.2           float64
+on                 float64
+1w                 float64
+2w_y               float64
+1m                 float64
+2m_y               float64
+3m                 float64
+6m                 float64
+12m_y              float64
+date_y.2           float64
+comp_rate          float64
+center_rate        float64
+micro_rate         float64
+cm_rate            float64
+sdb_rate           float64
+om_rate            float64
+aa_rate            float64
+m1_rate            float64
+m3_rate            float64
+m6_rate            float64
+m12_rate           float64
+long_rate          float64
+fft_real           float64
+fft_imag           float64
+absolute           float64
+angle              float64
+
+[305 rows x 1 columns]
