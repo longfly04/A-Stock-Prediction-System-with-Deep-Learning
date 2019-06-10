@@ -620,18 +620,36 @@ equity_yoy|float|净资产同比增长率
 
 分析股价数据特征，主要对开盘价、收盘价、最高价、最低价、涨跌幅、成交额、换手率、量比、市盈率、市净率、市销率、流通股本、总股本、小、中、大、特大单买入卖出额等特征进行分析，并且对以上特征应用了指数移动平均、差分自相关等数据处理手段。
 
-![](project\feature_engineering\1_open_tech.png)
-![](project\feature_engineering\2_high_tech.png)
-![](project\feature_engineering\3_low_tech.png)
-![](project\feature_engineering\4_close_tech.png)
-![](project\feature_engineering\5_change_percentage_tech.png)
-![](project\feature_engineering\7_turnover_rate_tech.png)
-![](project\feature_engineering\9_pe_tech.png)
-![](project\feature_engineering\20_buy_extra_tech.png)
-![](project\feature_engineering\22_fourier_transforms.png)
-![](project\feature_engineering\23_close_price_correlations.png)
-![](project\feature_engineering\25_xgboost_training.png)
-![](project\feature_engineering\26_feature_importance.png)
+
+<center><img src='project\feature_engineering\1_open_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\2_high_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\3_low_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\4_close_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\5_change_percentage_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\7_turnover_rate_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\8_volume_ratio_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\9_pe_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\20_buy_extra_tech.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\22_fourier_transforms.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\23_close_price_correlations.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\24_ARIMA.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\25_xgboost_training.png' width=1060></img></center>
+
+<center><img src='project\feature_engineering\26_feature_importance.png' width=1060></img></center>
+
+
 
 ## 训练模型
 
