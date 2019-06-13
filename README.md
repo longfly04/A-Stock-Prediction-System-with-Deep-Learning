@@ -13,7 +13,7 @@ For more information ： https://longfly04.github.io/A-Stock-Prediction-System-w
 
 # 1. 目录
 
-<!-- TOC -->autoauto- [1. 目录](#1-目录)auto- [2. 系统框架](#2-系统框架)auto- [3. 数据获取](#3-数据获取)auto- [4. 数据特征工程](#4-数据特征工程)auto    - [4.1. 概述](#41-概述)auto    - [4.2. 基本面分析](#42-基本面分析)auto    - [4.3. 技术指标分析](#43-技术指标分析)auto    - [4.4. 特征重要性分析和降维](#44-特征重要性分析和降维)auto- [5. 训练模型](#5-训练模型)auto- [6. 评估和调参](#6-评估和调参)auto- [7. 可视化](#7-可视化)auto- [8. 参考资料](#8-参考资料)autoauto<!-- /TOC -->
+
 
 # 2. 系统框架
 
@@ -63,6 +63,8 @@ stream2 直接进到boost的数据，90%训练，9%验证，1%测试。
 
 
 # 3. 数据获取
+
+通过tushare获取上证50成分股中部分股票每日成交信息和财务信息，包括：日线行情、资金流向、利润、资产负债情况、现金流量、财务报表等信息。数据的时间跨度为十年，从2008年1月1日至2018年12月31日。同时，获取了这个时间跨度内的宏观经济数据，包括利率、银行间同业拆借利率，民间借贷利率；市场交易数据，包括：沪深港通资金流向、北向资金流入、大宗交易、股票质押回购等信息。数据维度共576维。
 
 StockData类：
 
@@ -185,390 +187,30 @@ get_news.py：获取新闻，获取主流新闻网站的快讯新闻数据
 
 这里，基本面分析参考的指标主要包括：
 
-|指标|格式|含义|
-| --| -- | -- |
-|basic_eps|float|基本每股收益
-|diluted_eps|float|稀释每股收益
-|total_revenue|float|营业总收入
-|revenue|float|营业收入
-|int_income|float|利息收入
-total_share|float|期末总股本
-cap_rese|float|资本公积金
-undistr_porfit|float|未分配利润
-surplus_rese|float|盈余公积金
-special_rese|float|专项储备
-money_cap|float|货币资金
-trad_asset|float|交易性金融资产
-notes_receiv|float|应收票据
-accounts_receiv|float|应收账款
-oth_receiv|float|其他应收款
-prepayment|float|预付款项
-div_receiv|float|应收股利
-int_receiv|float|应收利息
-inventories|float|存货
-amor_exp|float|长期待摊费用
-nca_within_1y|float|一年内到期的非流动资产
-sett_rsrv|float|结算备付金
-loanto_oth_bank_fi|float|拆出资金
-premium_receiv|float|应收保费
-reinsur_receiv|float|应收分保账款
-reinsur_res_receiv|float|应收分保合同准备金
-pur_resale_fa|float|买入返售金融资产
-oth_cur_assets|float|其他流动资产
-total_cur_assets|float|流动资产合计
-fa_avail_for_sale|float|可供出售金融资产
-htm_invest|float|持有至到期投资
-lt_eqt_invest|float|长期股权投资
-invest_real_estate|float|投资性房地产
-time_deposits|float|定期存款
-oth_assets|float|其他资产
-lt_rec|float|长期应收款
-fix_assets|float|固定资产
-cip|float|在建工程
-const_materials|float|工程物资
-fixed_assets_disp|float|固定资产清理
-produc_bio_assets|float|生产性生物资产
-oil_and_gas_assets|float|油气资产
-intan_assets|float|无形资产
-r_and_d|float|研发支出
-goodwill|float|商誉
-lt_amor_exp|float|长期待摊费用
-defer_tax_assets|float|递延所得税资产
-decr_in_disbur|float|发放贷款及垫款
-oth_nca|float|其他非流动资产
-total_nca|float|非流动资产合计
-cash_reser_cb|float|现金及存放中央银行款项
-depos_in_oth_bfi|float|存放同业和其它金融机构款项
-prec_metals|float|贵金属
-deriv_assets|float|衍生金融资产
-rr_reins_une_prem|float|应收分保未到期责任准备金
-rr_reins_outstd_cla|float|应收分保未决赔款准备金
-rr_reins_lins_liab|float|应收分保寿险责任准备金
-rr_reins_lthins_liab|float|应收分保长期健康险责任准备金
-refund_depos|float|存出保证金
-ph_pledge_loans|float|保户质押贷款
-refund_cap_depos|float|存出资本保证金
-indep_acct_assets|float|独立账户资产
-client_depos|float|其中：客户资金存款
-client_prov|float|其中：客户备付金
-transac_seat_fee|float|其中:交易席位费
-invest_as_receiv|float|应收款项类投资
-total_assets|float|资产总计
-lt_borr|float|长期借款
-st_borr|float|短期借款
-cb_borr|float|向中央银行借款
-depos_ib_deposits|float|吸收存款及同业存放
-loan_oth_bank|float|拆入资金
-trading_fl|float|交易性金融负债
-notes_payable|float|应付票据
-acct_payable|float|应付账款
-adv_receipts|float|预收款项
-sold_for_repur_fa|float|卖出回购金融资产款
-comm_payable|float|应付手续费及佣金
-payroll_payable|float|应付职工薪酬
-taxes_payable|float|应交税费
-int_payable|float|应付利息
-div_payable|float|应付股利
-oth_payable|float|其他应付款
-acc_exp|float|预提费用
-deferred_inc|float|递延收益
-st_bonds_payable|float|应付短期债券
-payable_to_reinsurer|float|应付分保账款
-rsrv_insur_cont|float|保险合同准备金
-acting_trading_sec|float|代理买卖证券款
-acting_uw_sec|float|代理承销证券款
-non_cur_liab_due_1y|float|一年内到期的非流动负债
-oth_cur_liab|float|其他流动负债
-total_cur_liab|float|流动负债合计
-bond_payable|float|应付债券
-lt_payable|float|长期应付款
-specific_payables|float|专项应付款
-estimated_liab|float|预计负债
-defer_tax_liab|float|递延所得税负债
-defer_inc_non_cur_liab|float|递延收益-非流动负债
-oth_ncl|float|其他非流动负债
-total_ncl|float|非流动负债合计
-depos_oth_bfi|float|同业和其它金融机构存放款项
-deriv_liab|float|衍生金融负债
-depos|float|吸收存款
-agency_bus_liab|float|代理业务负债
-oth_liab|float|其他负债
-prem_receiv_adva|float|预收保费
-depos_received|float|存入保证金
-ph_invest|float|保户储金及投资款
-reser_une_prem|float|未到期责任准备金
-reser_outstd_claims|float|未决赔款准备金
-reser_lins_liab|float|寿险责任准备金
-reser_lthins_liab|float|长期健康险责任准备金
-indept_acc_liab|float|独立账户负债
-pledge_borr|float|其中:质押借款
-indem_payable|float|应付赔付款
-policy_div_payable|float|应付保单红利
-total_liab|float|负债合计
-treasury_share|float|减:库存股
-ordin_risk_reser|float|一般风险准备
-forex_differ|float|外币报表折算差额
-invest_loss_unconf|float|未确认的投资损失
-minority_int|float|少数股东权益
-total_hldr_eqy_exc_min_int|float|股东权益合计(不含少数股东权益)
-total_hldr_eqy_inc_min_int|float|股东权益合计(含少数股东权益)
-total_liab_hldr_eqy|float|负债及股东权益总计
-lt_payroll_payable|float|长期应付职工薪酬
-oth_comp_income|float|其他综合收益
-oth_eqt_tools|float|其他权益工具
-oth_eqt_tools_p_shr|float|其他权益工具(优先股)
-lending_funds|float|融出资金
-acc_receivable|float|应收款项
-st_fin_payable|float|应付短期融资款
-payables|float|应付款项
-hfs_assets|float|持有待售的资产
-hfs_sales|float|持有待售的负债
-net_profit|float|净利润
-finan_exp|float|财务费用
-c_fr_sale_sg|float|销售商品、提供劳务收到的现金
-recp_tax_rends|float|收到的税费返还
-n_depos_incr_fi|float|客户存款和同业存放款项净增加额
-n_incr_loans_cb|float|向中央银行借款净增加额
-n_inc_borr_oth_fi|float|向其他金融机构拆入资金净增加额
-prem_fr_orig_contr|float|收到原保险合同保费取得的现金
-n_incr_insured_dep|float|保户储金净增加额
-n_reinsur_prem|float|收到再保业务现金净额
-n_incr_disp_tfa|float|处置交易性金融资产净增加额
-ifc_cash_incr|float|收取利息和手续费净增加额
-n_incr_disp_faas|float|处置可供出售金融资产净增加额
-n_incr_loans_oth_bank|float|拆入资金净增加额
-n_cap_incr_repur|float|回购业务资金净增加额
-c_fr_oth_operate_a|float|收到其他与经营活动有关的现金
-c_inf_fr_operate_a|float|经营活动现金流入小计
-c_paid_goods_s|float|购买商品、接受劳务支付的现金
-c_paid_to_for_empl|float|支付给职工以及为职工支付的现金
-c_paid_for_taxes|float|支付的各项税费
-n_incr_clt_loan_adv|float|客户贷款及垫款净增加额
-n_incr_dep_cbob|float|存放央行和同业款项净增加额
-c_pay_claims_orig_inco|float|支付原保险合同赔付款项的现金
-pay_handling_chrg|float|支付手续费的现金
-pay_comm_insur_plcy|float|支付保单红利的现金
-oth_cash_pay_oper_act|float|支付其他与经营活动有关的现金
-st_cash_out_act|float|经营活动现金流出小计
-n_cashflow_act|float|经营活动产生的现金流量净额
-oth_recp_ral_inv_act|float|收到其他与投资活动有关的现金
-c_disp_withdrwl_invest|float|收回投资收到的现金
-c_recp_return_invest|float|取得投资收益收到的现金
-n_recp_disp_fiolta|float|处置固定资产、无形资产和其他长期资产收回的现金净额
-n_recp_disp_sobu|float|处置子公司及其他营业单位收到的现金净额
-stot_inflows_inv_act|float|投资活动现金流入小计
-c_pay_acq_const_fiolta|float|购建固定资产、无形资产和其他长期资产支付的现金
-c_paid_invest|float|投资支付的现金
-n_disp_subs_oth_biz|float|取得子公司及其他营业单位支付的现金净额
-oth_pay_ral_inv_act|float|支付其他与投资活动有关的现金
-n_incr_pledge_loan|float|质押贷款净增加额
-stot_out_inv_act|float|投资活动现金流出小计
-n_cashflow_inv_act|float|投资活动产生的现金流量净额
-c_recp_borrow|float|取得借款收到的现金
-proc_issue_bonds|float|发行债券收到的现金
-oth_cash_recp_ral_fnc_act|float|收到其他与筹资活动有关的现金
-stot_cash_in_fnc_act|float|筹资活动现金流入小计
-free_cashflow|float|企业自由现金流量
-c_prepay_amt_borr|float|偿还债务支付的现金
-c_pay_dist_dpcp_int_exp|float|分配股利、利润或偿付利息支付的现金
-incl_dvd_profit_paid_sc_ms|float|其中:子公司支付给少数股东的股利、利润
-oth_cashpay_ral_fnc_act|float|支付其他与筹资活动有关的现金
-stot_cashout_fnc_act|float|筹资活动现金流出小计
-n_cash_flows_fnc_act|float|筹资活动产生的现金流量净额
-eff_fx_flu_cash|float|汇率变动对现金的影响
-n_incr_cash_cash_equ|float|现金及现金等价物净增加额
-c_cash_equ_beg_period|float|期初现金及现金等价物余额
-c_cash_equ_end_period|float|期末现金及现金等价物余额
-c_recp_cap_contrib|float|吸收投资收到的现金
-incl_cash_rec_saims|float|其中:子公司吸收少数股东投资收到的现金
-uncon_invest_loss|float|未确认投资损失
-prov_depr_assets|float|加:资产减值准备
-depr_fa_coga_dpba|float|固定资产折旧、油气资产折耗、生产性生物资产折旧
-amort_intang_assets|float|无形资产摊销
-lt_amort_deferred_exp|float|长期待摊费用摊销
-decr_deferred_exp|float|待摊费用减少
-incr_acc_exp|float|预提费用增加
-loss_disp_fiolta|float|处置固定、无形资产和其他长期资产的损失
-loss_scr_fa|float|固定资产报废损失
-loss_fv_chg|float|公允价值变动损失
-invest_loss|float|投资损失
-decr_def_inc_tax_assets|float|递延所得税资产减少
-incr_def_inc_tax_liab|float|递延所得税负债增加
-decr_inventories|float|存货的减少
-decr_oper_payable|float|经营性应收项目的减少
-incr_oper_payable|float|经营性应付项目的增加
-others|float|其他
-im_net_cashflow_oper_act|float|经营活动产生的现金流量净额(间接法)
-conv_debt_into_cap|float|债务转为资本
-conv_copbonds_due_within_1y|float|一年内到期的可转换公司债券
-fa_fnc_leases|float|融资租入固定资产
-end_bal_cash|float|现金的期末余额
-beg_bal_cash|float|减:现金的期初余额
-end_bal_cash_equ|float|加:现金等价物的期末余额
-beg_bal_cash_equ|float|减:现金等价物的期初余额
-im_n_incr_cash_equ|float|现金及现金等价物净增加额(间接法)
-eps|float|基本每股收益
-dt_eps|float|稀释每股收益
-total_revenue_ps|float|每股营业总收入
-revenue_ps|float|每股营业收入
-capital_rese_ps|float|每股资本公积
-surplus_rese_ps|float|每股盈余公积
-undist_profit_ps|float|每股未分配利润
-extra_item|float|非经常性损益
-profit_dedt|float|扣除非经常性损益后的净利润
-gross_margin|float|毛利
-current_ratio|float|流动比率
-quick_ratio|float|速动比率
-cash_ratio|float|保守速动比率
-invturn_days|float|存货周转天数
-arturn_days|float|应收账款周转天数
-inv_turn|float|存货周转率
-ar_turn|float|应收账款周转率
-ca_turn|float|流动资产周转率
-fa_turn|float|固定资产周转率
-assets_turn|float|总资产周转率
-op_income|float|经营活动净收益
-valuechange_income|float|价值变动净收益
-interst_income|float|利息费用
-daa|float|折旧与摊销
-ebit|float|息税前利润
-ebitda|float|息税折旧摊销前利润
-fcff|float|企业自由现金流量
-fcfe|float|股权自由现金流量
-current_exint|float|无息流动负债
-noncurrent_exint|float|无息非流动负债
-interestdebt|float|带息债务
-netdebt|float|净债务
-tangible_asset|float|有形资产
-working_capital|float|营运资金
-networking_capital|float|营运流动资本
-invest_capital|float|全部投入资本
-retained_earnings|float|留存收益
-diluted2_eps|float|期末摊薄每股收益
-bps|float|每股净资产
-ocfps|float|每股经营活动产生的现金流量净额
-retainedps|float|每股留存收益
-cfps|float|每股现金流量净额
-ebit_ps|float|每股息税前利润
-fcff_ps|float|每股企业自由现金流量
-fcfe_ps|float|每股股东自由现金流量
-netprofit_margin|float|销售净利率
-grossprofit_margin|float|销售毛利率
-cogs_of_sales|float|销售成本率
-expense_of_sales|float|销售期间费用率
-profit_to_gr|float|净利润/营业总收入
-saleexp_to_gr|float|销售费用/营业总收入
-adminexp_of_gr|float|管理费用/营业总收入
-finaexp_of_gr|float|财务费用/营业总收入
-impai_ttm|float|资产减值损失/营业总收入
-gc_of_gr|float|营业总成本/营业总收入
-op_of_gr|float|营业利润/营业总收入
-ebit_of_gr|float|息税前利润/营业总收入
-roe|float|净资产收益率
-roe_waa|float|加权平均净资产收益率
-roe_dt|float|净资产收益率(扣除非经常损益)
-roa|float|总资产报酬率
-npta|float|总资产净利润
-roic|float|投入资本回报率
-roe_yearly|float|年化净资产收益率
-roa2_yearly|float|年化总资产报酬率
-roe_avg|float|平均净资产收益率(增发条件)
-opincome_of_ebt|float|经营活动净收益/利润总额
-investincome_of_ebt|float|价值变动净收益/利润总额
-n_op_profit_of_ebt|float|营业外收支净额/利润总额
-tax_to_ebt|float|所得税/利润总额
-dtprofit_to_profit|float|扣除非经常损益后的净利润/净利润
-salescash_to_or|float|销售商品提供劳务收到的现金/营业收入
-ocf_to_or|float|经营活动产生的现金流量净额/营业收入
-ocf_to_opincome|float|经营活动产生的现金流量净额/经营活动净收益
-capitalized_to_da|float|资本支出/折旧和摊销
-debt_to_assets|float|资产负债率
-assets_to_eqt|float|权益乘数
-dp_assets_to_eqt|float|权益乘数(杜邦分析)
-ca_to_assets|float|流动资产/总资产
-nca_to_assets|float|非流动资产/总资产
-tbassets_to_totalassets|float|有形资产/总资产
-int_to_talcap|float|带息债务/全部投入资本
-eqt_to_talcapital|float|归属于母公司的股东权益/全部投入资本
-currentdebt_to_debt|float|流动负债/负债合计
-longdeb_to_debt|float|非流动负债/负债合计
-ocf_to_shortdebt|float|经营活动产生的现金流量净额/流动负债
-debt_to_eqt|float|产权比率
-eqt_to_debt|float|归属于母公司的股东权益/负债合计
-eqt_to_interestdebt|float|归属于母公司的股东权益/带息债务
-tangibleasset_to_debt|float|有形资产/负债合计
-tangasset_to_intdebt|float|有形资产/带息债务
-tangibleasset_to_netdebt|float|有形资产/净债务
-ocf_to_debt|float|经营活动产生的现金流量净额/负债合计
-ocf_to_interestdebt|float|经营活动产生的现金流量净额/带息债务
-ocf_to_netdebt|float|经营活动产生的现金流量净额/净债务
-ebit_to_interest|float|已获利息倍数(EBIT/利息费用)
-longdebt_to_workingcapital|float|长期债务与营运资金比率
-ebitda_to_debt|float|息税折旧摊销前利润/负债合计
-turn_days|float|营业周期
-roa_yearly|float|年化总资产净利率
-roa_dp|float|总资产净利率(杜邦分析)
-fixed_assets|float|固定资产合计
-profit_prefin_exp|float|扣除财务费用前营业利润
-non_op_profit|float|非营业利润
-op_to_ebt|float|营业利润／利润总额
-nop_to_ebt|float|非营业利润／利润总额
-ocf_to_profit|float|经营活动产生的现金流量净额／营业利润
-cash_to_liqdebt|float|货币资金／流动负债
-cash_to_liqdebt_withinterest|float|货币资金／带息流动负债
-op_to_liqdebt|float|营业利润／流动负债
-op_to_debt|float|营业利润／负债合计
-roic_yearly|float|年化投入资本回报率
-total_fa_trun|float|固定资产合计周转率
-profit_to_op|float|利润总额／营业收入
-q_opincome|float|经营活动单季度净收益
-q_investincome|float|价值变动单季度净收益
-q_dtprofit|float|扣除非经常损益后的单季度净利润
-q_eps|float|每股收益(单季度)
-q_netprofit_margin|float|销售净利率(单季度)
-q_gsprofit_margin|float|销售毛利率(单季度)
-q_exp_to_sales|float|销售期间费用率(单季度)
-q_profit_to_gr|float|净利润／营业总收入(单季度)
-q_saleexp_to_gr|float|销售费用／营业总收入 (单季度)
-q_adminexp_to_gr|float|管理费用／营业总收入 (单季度)
-q_finaexp_to_gr|float|财务费用／营业总收入 (单季度)
-q_impair_to_gr_ttm|float|资产减值损失／营业总收入(单季度)
-q_gc_to_gr|float|营业总成本／营业总收入 (单季度)
-q_op_to_gr|float|营业利润／营业总收入(单季度)
-q_roe|float|净资产收益率(单季度)
-q_dt_roe|float|净资产单季度收益率(扣除非经常损益)
-q_npta|float|总资产净利润(单季度)
-q_opincome_to_ebt|float|经营活动净收益／利润总额(单季度)
-q_investincome_to_ebt|float|价值变动净收益／利润总额(单季度)
-q_dtprofit_to_profit|float|扣除非经常损益后的净利润／净利润(单季度)
-q_salescash_to_or|float|销售商品提供劳务收到的现金／营业收入(单季度)
-q_ocf_to_sales|float|经营活动产生的现金流量净额／营业收入(单季度)
-q_ocf_to_or|float|经营活动产生的现金流量净额／经营活动净收益(单季度)
-basic_eps_yoy|float|基本每股收益同比增长率(%)
-dt_eps_yoy|float|稀释每股收益同比增长率(%)
-cfps_yoy|float|每股经营活动产生的现金流量净额同比增长率(%)
-op_yoy|float|营业利润同比增长率(%)
-ebt_yoy|float|利润总额同比增长率(%)
-netprofit_yoy|float|归属母公司股东的净利润同比增长率(%)
-dt_netprofit_yoy|float|归属母公司股东的净利润-扣除非经常损益同比增长率(%)
-ocf_yoy|float|经营活动产生的现金流量净额同比增长率(%)
-roe_yoy|float|净资产收益率(摊薄)同比增长率(%)
-bps_yoy|float|每股净资产相对年初增长率(%)
-assets_yoy|float|资产总计相对年初增长率(%)
-eqt_yoy|float|归属母公司的股东权益相对年初增长率(%)
-tr_yoy|float|营业总收入同比增长率(%)
-or_yoy|float|营业收入同比增长率(%)
-q_gr_yoy|float|营业总收入同比增长率(%)(单季度)
-q_gr_qoq|float|营业总收入环比增长率(%)(单季度)
-q_sales_yoy|float|营业收入同比增长率(%)(单季度)
-q_sales_qoq|float|营业收入环比增长率(%)(单季度)
-q_op_yoy|float|营业利润同比增长率(%)(单季度)
-q_op_qoq|float|营业利润环比增长率(%)(单季度)
-q_profit_yoy|float|净利润同比增长率(%)(单季度)
-q_profit_qoq|float|净利润环比增长率(%)(单季度)
-q_netprofit_yoy|float|归属母公司股东的净利润同比增长率(%)(单季度)
-q_netprofit_qoq|float|归属母公司股东的净利润环比增长率(%)(单季度)
-equity_yoy|float|净资产同比增长率
+
+|外汇|期权合约信息|期货|市场参考数据|宏观经济
+|---|----|-----|---------|---|
+|外汇基础信息（海外）|期权合约信息|期货合约信息|沪深港通资金流向|利率数据
+|外汇日线行情|期权日线行情|期货合约信息 |沪深股通十大成交股|shibor利率
+||期货交易日历 |港股通十大成交股||shibor报价数据
+||期货日线行情 |融资融券交易汇总||LPR贷款基础利率
+||每日持仓排名 |融资融券交易明细||Libor利率
+||仓单日报 |前十大股东||Hibor利率
+||每日结算参数 |前十大流通股东||温州民间借贷利率
+||南华期货指数行情 |龙虎榜每日明细||广州民间借贷利率
+||期权|龙虎榜机构交易明细
+|||股权质押统计数据
+|||股权质押明细数据
+|||股票回购
+|||概念股分类表
+|||概念股明细列表
+|||限售股解禁
+|||大宗交易
+|||股票开户数据
+|||股票开户数据（旧）
+|||股东人数
+|||股东增减持
+
 
 ## 4.3. 技术指标分析
 
@@ -619,38 +261,581 @@ equity_yoy|float|净资产同比增长率
 |net_mf_amount|float|净流入额（万元）
 
 
+### 平滑异同平均线指标——MACD
+
+MACD指标又叫指数平滑异同移动平均线，是由查拉尔·阿佩尔（Gerald Apple）所创造的,是一种研判股票买卖时机、跟踪股价运行趋势的技术分析工具。
+
+#### MACD指标的原理
+
+MACD指标是根据均线的构造原理，对股票价格的收盘价进行平滑处理，求出算术平均值以后再进行计算，是一种趋向类指标。
+
+MACD 指标是运用快速（短期）和慢速（长期）移动平均线及其聚合与分离的征兆，加以双重平滑运算。而根据移动平均线原理发展出来的MACD，一则去除了移动平均线频繁发出假信号的缺陷，二则保留了移动平均线的效果，因此，MACD指标具有均线趋势性、稳重性、安定性等特点，是用来研判买卖股票的时机，预测股票价格涨跌的技术分析指标。
+
+MACD 指标主要是通过EMA、DIF和DEA（或叫MACD、DEM）这三值之间关系的研判，DIF和DEA连接起来的移动平均线的研判以及DIF减去DEM值而绘制成的柱状图（BAR）的研判等来分析判断行情，预测股价中短期趋势的主要的股市技术分析指标。其中，DIF是核心，DEA是辅助。DIF是快速平滑移动平均线（EMA1）和慢速平滑移动平均线（EMA2）的差。BAR柱状图在股市技术软件上是用红柱和绿柱的收缩来研判行情。
+
+#### MACD指标的计算方法
+
+MACD在应用上，首先计算出快速移动平均线（即EMA1）和慢速移动平均线（即EMA2），以此两个数值，来作为测量两者（快慢速线）间的离差值（DIF）的依据，然后再求DIF的N周期的平滑移动平均线DEA（也叫MACD、DEM）线。
+
+以EMA1的参数为12日，EMA2的参数为26日，DIF的参数为9日为例来看看MACD的计算过程
+
+1、计算移动平均值（EMA）
+
+12日EMA的算式为
+
+EMA（12）=前一日EMA（12）×11/13＋今日收盘价×2/13
+
+26日EMA的算式为
+
+EMA（26）=前一日EMA（26）×25/27＋今日收盘价×2/27
+
+2、计算离差值（DIF）
+
+DIF=今日EMA（12）－今日EMA（26）
+
+3、计算DIF的9日EMA
+
+根据离差值计算其9日的EMA，即离差平均值，是所求的MACD值。为了不与指标原名相混淆，此值又名DEA或DEM。
+
+今日DEA（MACD）=前一日DEA×8/10＋今日DIF×2/10
+
+计算出的DIF和DEA的数值均为正值或负值。
+
+理论上，在持续的涨势中，12 日EMA线在26日 EMA线之上，其间的正离差值（+DIF）会越来越大；反之，在跌势中离差值可能变为负数（—DIF），也会越来越大，而在行情开始好转时，正负离差值将会缩小。指标MACD正是利用正负的离差值（±DIF）与离差值的N日平均线（N日EMA）的交叉信号作为买卖信号的依据，即再度以快慢速移动线的交叉原理来分析买卖信号。另外，MACD指标在股市软件上还有个辅助指标——BAR柱状线，其公式为：BAR=2×(DIF－DEA)，我们还是可以利用BAR 柱状线的收缩来决定买卖时机。
+
+离差值DIF 和离差平均值DEA是研判MACD的主要工具。其计算方法比较烦琐，由于目前这些计算值都会在股市分析软件上由计算机自动完成，因此，投资者只要了解其运算过程即可，而更重要的是掌握它的研判功能。另外，和其他指标的计算一样，由于选用的计算周期的不同，MACD指标也包括日MACD指标、周MACD指标、月MACD指标年MACD指标以及分钟MACD指标等各种类型。经常被用于股市研判的是日MACD指标和周MACD指标。虽然它们的计算时的取值有所不同，但基本的计算方法一样。
+
+在实践中，将各点的 DIF和DEA（MACD）连接起来就会形成在零轴上下移动的两条快速（短期）和慢速（长期）线，此即为MACD图。
+
+#### MACD指标的一般研判标准
+
+MACD 指标是市场上绝大多数投资者熟知的分析工具，但在具体运用时，投资者可能会觉得MACD指标的运用的准确性、实效性、可操作性上有很多茫然的地方，有时会发现用从书上学来的MACD指标的分析方法和技巧去研判股票走势，所得出的结论往往和实际走势存在着特别大的差异，甚至会得出相反的结果。这其中的主要原因是市场上绝大多数论述股市技术分析的书中关于MACD的论述只局限在表面的层次，只介绍MACD的一般分析原理和方法，而对MACD分析指标的一些特定的内涵和分析技巧的介绍鲜有涉及。
+
+### 随机指标——KDJ
+
+   KDJ指标又叫随机指标，是由乔治·蓝恩博士（George Lane）最早提出的，是一种相当新颖、实用的技术分析指标，它起先用于期货市场的分析，后被广泛用于股市的中短期趋势分析，是期货和股票市场上最常用的技术分析工具。
+
+
+#### KDJ指标的原理
+
+随机指标KDJ 一般是根据统计学的原理，通过一个特定的周期（常为9日、9周等）内出现过的最高价、最低价及最后一个计算周期的收盘价及这三者之间的比例关系，来计算最后一个计算周期的未成熟随机值RSV，然后根据平滑移动平均线的方法来计算K值、D值与J值，并绘成曲线图来研判股票走势。
+
+随机指标KDJ 是以最高价、最低价及收盘价为基本数据进行计算，得出的K值、D值和J值分别在指标的坐标上形成的一个点，连接无数个这样的点位，就形成一个完整的、能反映价格波动趋势的KDJ指标。它主要是利用价格波动的真实波幅来反映价格走势的强弱和超买超卖现象，在价格尚未上升或下降之前发出买卖信号的一种技术工具。它在设计过程中主要是研究最高价、最低价和收盘价之间的关系，同时也融合了动量观念、强弱指标和移动平均线的一些优点，因此，能够比较迅速、快捷、直观地研判行情。
+
+随机指标KDJ 最早是以KD指标的形式出现，而KD指标是在威廉指标的基础上发展起来的。不过威廉指标只判断股票的超买超卖的现象，在KDJ指标中则融合了移动平均线速度上的观念，形成比较准确的买卖信号依据。在实践中，K线与D线配合J线组成KDJ指标来使用。由于KDJ线本质上是一个随机波动的观念，故其对于掌握中短期行情走势比较准确。
+
+ 
+
+#### KDJ指标的计算方法
+
+指标KDJ的计算比较复杂，首先要计算周期（n日、n周等）的RSV值，即未成熟随机指标值，然后再计算K值、D值、J值等。以日KDJ数值的计算为例，其计算公式为
+
+n日RSV=（Cn－Ln）÷（Hn－Ln）×100
+
+式中，Cn为第n日收盘价；Ln为n日内的最低价；Hn为n日内的最高价。RSV值始终在1—100间波动。
+
+其次，计算K值与D值：
+
+当日K值=2/3×前一日K值＋1/3×当日RSV
+
+当日D值=2/3×前一日D值＋1/3×当日K值
+
+若无前一日K 值与D值，则可分别用50来代替。
+
+以9日为周期的KD线为例。首先须计算出最近9日的RSV值，即未成熟随机值，计算公式为
+
+9日RSV=（C－L9）÷（H9－L9）×100
+
+式中，C为第9日的收盘价；L9为9日内的最低价；H9为9日内的最高价。
+
+K值=2/3×前一日 K值＋1/3×当日RSV
+
+D值=2/3×前一日K值＋1/3×当日RSV
+
+若无前一日K值与D值，则可以分别用50代替。
+
+需要说明的是，式中的平滑因子1/3和2/3是可以人为选定的,不过目前已经约定俗成，固定为1/3和2/3。在大多数股市分析软件中，平滑因子已经被设定为1/3和2/3，不需要作改动。另外，一般在介绍KD时，往往还附带一个J指标。
+
+J指标的计算公式为：
+
+J=3D—2K
+
+实际上，J的实质是反映K值和D值的乖离程度，从而领先KD值找出头部或底部。J值范围可超过100。
+
+J 指标是个辅助指标，最早的KDJ指标只有两条线，即K线和D线，指标也被称为KD指标，随着股市分析技术的发展，KD指标逐渐演变成KDJ指标，从而提高了KDJ指标分析行情的能力。另外，在一些股市重要的分析软件上，KDJ指标的K、D、J参数已经被简化成仅仅一个，即周期数（如日、周、月等），而且，随着股市软件分析技术的发展，投资者只需掌握KDJ形成的基本原理和计算方法，无须去计算K、D、J的值，更为重要的是利用KDJ指标去分析、研判股票行情。
+
+和其他指标的计算一样，由于选用的计算周期的不同，KDJ指标也包括日KDJ指标、周KDJ指标、月KDJ指标年KDJ指标以及分钟KDJ指标等各种类型。经常被用于股市研判的是日KDJ指标和周KDJ指标。虽然它们的计算时的取值有所不同，但基本的计算方法一样。
+
+ 
+#### KDJ指标的一般研判标准
+
+随机指标KDJ 主要是通过K、D和J这三条曲线的所构成的图形关系来分析股市上的超买超卖，走势背离及K线、D线和J线相互交叉突破等现象，从而预测股价中、短期及长期趋势。KDJ是市场上绝大多数投资者熟知的分析工具，但具体运用时，投资者可能会发现KDJ的分析结果和实际走势存在着特别大的差别，有时还会得出相反的结论，这其中原因主要是绝大多数投资者只知道KDJ的一般分析原理和方法，而对KDJ分析指标的一些内涵和特定的分析技巧知之甚少。本节在介绍股市分析中市场上流行的KDJ的一般研判技巧和分析方法上，重点挖掘KDJ指标的内在规律，详细分析KDJ的一些特殊研判功能。
+
+KDJ指标是三条曲线，在应用时KDJ指标的一般研判标准主要是从KDJ三个参数的取值、KDJ曲线的形态、KDJ曲线的交叉、KDJ曲线的背离和K线、D线、J线的运行状态以及KDJ曲线同股价曲线的配合等六个方面来考虑。
+
+一、KDJ的取值
+
+1、取值范围
+
+KDJ指标中，K值和D值的取值范围都是0—100，而J值的取值范围可以超过100和低于0，但在分析软件上KDJ的研判范围都是0—100。通常就敏感性而言，J值最强，K值次之，D值最慢，而就安全性而言，J值最差，K值次之，D值最稳。
+
+2、超买超卖信号
+根据KDJ的取值，可将其划分为几个区域，即超买区、超卖区和徘徊区。按一般划分标准，K、D、J这三值在20以下为超卖区，是买入信号；K、D、J这三值在80以上为超买区，是卖出信号；K、D、J这三值在20—80之间为徘徊区，宜观望。
+
+3、 多空力量对比
+
+一般而言，当K、D、J三值在50附近时，表示多空双方力量均衡；当K、D、J三值都大于50时，表示多方力量占优；当K、D、J三值都小于50时，表示空方力量占优。
+
+二、KDJ曲线的形态
+
+KDJ 指标的研判还可以从KDJ曲线的形态来分析。当KDJ指标曲线图形形成头肩顶底形态、双重顶底形态（即M头、W底）及三重顶底等形态时，也可以按照形态理论的研判方法加以分析。KDJ曲线出现的各种形态是判断行情走势、决定买卖时机的一种分析方法。另外，KDJ指标曲线还可以划趋势线、压力线和支撑线等。
+
+1、当KDJ曲线在50上方的高位时，如果KDJ曲线的走势形成M头或三重顶等顶部反转形态，可能预示着股价由强势转为弱势，股价即将大跌，应及时卖出股票。如果股价的曲线也出现同样形态则更可确认，其跌幅可以用M头或三重顶等形态理论来研判。
+
+2、当KDJ曲线在50下方的低位时，如果KDJ曲线的走势出现W底或三重底等底部反转形态，可能预示着股价由弱势转为强势，股价即将反弹向上，可以逢低少量吸纳股票。如果股价曲线也出现同样形态更可确认，其涨幅可以用W底或三重底形态理论来研判。
+
+3、KDJ曲线的形态中M头和三重顶形态的准确性要大于W底和三重底。
+
+三、KDJ曲线的交叉
+
+KDJ曲线的交叉分为黄金交叉和死亡交叉两种形式
+
+一般而言，在一个股票的完整的升势和跌势过程中，KDJ指标中的K、D、J线会出现两次或以上的“黄金交叉”和“死亡交叉”情况。
+
+1、当股价经过一段很长时间的低位盘整行情，并且K、D、J三线都处于50线以下时，一旦J线和K线几乎同时向上突破D线时，表明股市即将转强，股价跌势已经结束，将止跌朝上，可以开始买进股票，进行中长线建仓。这是KDJ指标“黄金交叉”的一种形式。
+
+2、当股价经过一段时间的上升过程中的盘整行情，并且K、D、J线都处于50线附近徘徊时，一旦J线和K线几乎同时再次向上突破D线，成交量再度放出时，表明股市处于一种强势之中，股价将再次上涨，可以加码买进股票或持股待涨，这就是KDJ指标“黄金交叉”的一种形式。
+
+3、当股价经过前期一段很长时间的上升行情后，股价涨幅已经很大的情况下，一旦J线和K线在高位（80以上）几乎同时向下突破D线时，表明股市即将由强势转为弱势，股价将大跌，这时应卖出大部分股票而不能买股票，这就是KDJ指标的“死亡交叉”的一种形式。
+
+4、当股价经过一段时间的下跌后，而股价向上反弹的动力缺乏，各种均线对股价形成较强的压力时，KDJ曲线在经过短暂的反弹到80线附近，但未能重返80线以上时，一旦J线和K线再次向下突破D线时，表明股市将再次进入极度弱市中，股价还将下跌，可以再卖出股票或观望，这是KDJ指标“死亡交叉”的另一种形式。
+
+四、KDJ曲线的背离
+
+KDJ曲线的背离就是指当KDJ指标的曲线图的走势方向正好和K线图的走势方向正好相反。KDJ指标的背离有顶背离和底背离两种。
+
+当股价K线图上的股票走势一峰比一峰高，股价在一直向上涨，而KDJ曲线图上的KDJ指标的走势是在高位一峰比一峰低，这叫顶背离现象。顶背离现象一般是股价将高位反转的信号，表明股价中短期内即将下跌，是卖出的信号。
+
+当股价K线图上的股票走势一峰比一峰低，股价在向下跌，而KDJ曲线图上的KDJ指标的走势是在低位一底比一底高，这叫低背离现象。底背离现象一般是股价将低位反转的信号，表明股价中短期内即将上涨，是买入的信号。
+
+与其他技术指标的背离现象研判一样，KDJ 的背离中，顶背离的研判准确性要高于底背离。当股价在高位，KDJ在80以上出现顶背离时，可以认为股价即将反转向下，投资者可以及时卖出股票；而股价在低位，KDJ也在低位（50以下）出现底背离时，一般要反复出现几次底背离才能确认，并且投资者只能做战略建仓或做短期投资。
+
+五、K、D、J曲线运行的状态
+
+1、当J曲线开始在底部（50以下）向上突破K曲线时，说明股价的弱势整理格局可能被打破，股价短期将向上运动，投资者可以考虑少量长线建仓。
+
+2、当J曲线向上突破K曲线并迅速向上运动，同时曲线也向上突破D曲线，说明股价的中长期上涨行情已经开始，投资者可以加大买入股票的力度。
+
+3、当K、D、J曲线开始摆脱前期窄幅盘整的区间并同时向上快速运动时，说明股价已经进入短线强势拉升行情，投资者应坚决持股待涨。
+
+4、当J曲线经过一段快速向上运动的过程后开始在高位（80以上）向下掉头时，说明股价短期上涨过快，将开始短线调整，投资者可以短线卖出股票。
+
+5、当D曲线也开始在高位向下掉头时，说明股价的短期上涨行情可能结束，投资者应中线卖出股票。
+
+6、当K曲线也开始在高位向下掉头时，说明股价的中短期上涨行情已经结束，投资者应全部清仓离场。
+
+7、当K、D、J曲线从高位同时向下运动时，说明股价的下跌趋势已经形成，投资者应坚决持币观望。
+
+六、KDJ曲线与股价曲线的配合使用
+
+1、当KDJ曲线与股价曲线从低位（KDJ值均在50以下）同步上升，表明股价中长期趋势向好、短期内股价有望继续上涨趋势，投资者应继续持股或逢低买入。
+
+2、当KDJ曲线与股价曲线从高位（KDJ值均在50以上）同步下降，表明短期内股价将继续下跌趋势，投资者应继续持币观望或逢高卖出。
+
+3、当KDJ曲线从高位回落，经过一段时间强势盘整后再度向上并创出新高，而股价曲线也在高位强势盘整后再度上升创出新高，表明股价的上涨动力依然较强，投资者可继续持股待涨。
+
+4、当KDJ曲线从高位回落，经过一段时间盘整后再度向上，但到了前期高点附近时却掉头向下、未能创出新高时，而股价曲线还在缓慢上升并创出新高，KDJ曲线和股价曲线在高位形成了相反的走势，这可能就意味着股价上涨的动力开始减弱，KDJ指标出现了顶背离现象。此时投资者应千万小心，一旦股价从下，应果断及时地离场。
+
+5、当KDJ曲线在长期弱势下跌过程中，经过一段时间弱势反弹后再度向下并创出新低，而股价曲线也在弱势盘整后再度向下创出新低，表明股价的下跌动能依然较强，投资者可继续持币观望。
+
+6、当KDJ曲线从低位向上反弹到一定高位、再度向下回落，但回调到前期低点附近时止跌企稳、未能创出新低时，而股价曲线还在缓慢下降并创出新低，KDJ曲线和股价曲线在低位形成相反的走势，这可能就意味着股价下跌的动能开始衰弱，KDJ指标出现了底背离现象。此时投资者也应密切关注股价动向，一旦股价向上就可以短线买入，等待反弹的出现。
+
+
+### 威廉指标——W%R
+
+威廉指标W%R又叫威廉超买超卖指标，简称威廉指标，是由拉瑞·威廉（Larry William）在1973年发明的，是目前股市技术分析中比较常用的短期研判指标。
+
+
+
+#### 威廉指标的原理
+
+威廉指标主要是通过分析一段时间内股价最高价、最低价和收盘价之间的关系，来判断股市的超买超卖现象，预测股价中短期的走势。它主要是利用振荡点来反映市场的超买超卖行为，分析多空双方力量的对比，从而提出有效的信号来研判市场中短期行为的走势。
+
+威廉指标是属于研究股价波幅的技术分析指标，在公式设计上和随机指标的原理比较相似，两者都是从研究股价波幅出发，通过分析一段时间的股票的最高价、最低价和收盘价等这三者关系，来反映市场的买卖气势的强弱，借以考察阶段性市场气氛、判断价格和理性投资价值标准相背离的程度。
+
+和股市其他技术分析指标一样，威廉指标可以运用于行情的各个周期的研判，大体而言，威廉指标可分为日、周、月、年、5 分钟、15分钟、30分钟、60分钟等各种周期。虽然各周期的威廉指标的研判有所区别，但基本原理相差不多。如日威廉指标是表示当天的收盘价在过去的一段日子里的全部价格范围内所处的相对位置，把这些日子里的最高价减去当日收市价，再将其差价除以这段日子的全部价格范围就得出当日的威廉指标。
+
+威廉指标在计算时首先要决定计算参数，此数可以采取一个买卖循环周期的半数。以日为买卖的周期为例，通常所选用的买卖循环周期为8日、14日、28日或56日等，扣除周六和周日，实际交易日为6日、10日、20日或40日等，取其一半则为3日、5日、10日或20日等。
+
+#### W%R指标的计算方法
+
+W%R指标的计算主要是利用分析周期内的最高价、最低价及周期结束的收盘价等三者之间的关系展开的。以日威廉指标为例，其计算公式为：
+
+W%R=（Hn—C）÷（Hn—Ln）×100
+
+其中：C为计算日的收盘价，Ln为N周期内的最低价，Hn为N周期内的最高价，公式中的N为选定的计算时间参数，一般为4或14。
+
+以计算周期为14日为例，其计算过程如下：
+
+W%R（14日）=（H14—C）÷（H14—L14）×100
+
+其中，C为第14天的收盘价，H14为14日内的最高价，L14为14日内的最低价。
+
+威廉指标是表示当天的收盘价在过去一段时间里的全部价格范围内所处的相对位置，因此，计算出的W%R值位于0——100之间。越接近0值，表明目前的价位越接近过去14日内的最低价；越接近100值，表明目前的价位越接近过去14日内的最高价，从这点出发，对于威廉指标的研判可能比较更容易理解。
+
+由于计算方法的不同，威廉指标的刻度在有些书中与随机指标W%R 和相对强弱指标RSI一样，顺序是一样的，即上界为100、下界为0。而在我国沪深股市通用的股市分析软件（钱龙、分析家等分析软件系统）中，W%R的刻度与RSI的刻度相反。为方便投资者，这里介绍的W%R的刻度与钱龙（分析家）软件相一致，即上界为0、下界为100。
+
+另外，和其他指标的计算一样，由于选用的计算周期的不同，W%R指标也包括日W%R指标、周W%R指标、月W%R指标和年W%R指标以及分钟W%R指标等各种类型。经常被用于股市研判的是日W%R指标和周W%R指标。虽然它们的计算时的取值有所不同，但基本的计算方法一样。
+
+####  W%R指标的一般研判标准
+
+W%R指标的一般研判标准主要是围绕W%R的数值大小、W%R曲线形状等方面展开的。
+
+一、W%R数值的大小
+
+和KDJ指标一样，W%R的数值范围为0——100。不同的是W%R指标是以0为顶部，以100为底部。
+
+1、当W%R在20——0区间时，是W%R指标的超买区，表明市场处于超买状态，股票价格已进入顶部，可考虑卖出。W%R=20这一横线，一般视为卖出线。
+
+2、当W%R进入80——100区间时，是W%R指标的超卖区，表明市场处于超卖状态，股票价格已近底部，可考虑买入。W%R=80这一横线，一般视为买入线。
+
+3、当W%R在20——80区间时，表明市场上多空暂时取得平衡，股票价格处于横盘整理之中，可考虑持股或持币观望。
+
+4、在具体实战中，当威廉曲线向上突破20超买线而进入超买区运行时，表明股价进入强势拉升行情，这是提醒投资者要密切关注行情的未来走势，只有当W%R曲线再次向下突破20线时，才为投资者提出预警，为投资者买卖决策提供参考。同样，当威廉曲线向下突破80超卖线而进入超卖区运行时，表明股价的强势下跌已经缓和，这也是提醒投资者可以为建仓作准备，而只有当W%R曲线再次向上突破80线时，投资者才真正短线买入。
+
+二、W%R曲线的形状
+
+1、当W%R曲线从超卖区开始向上爬升，超过80这条买入线时，说明行情可能向上突破，是开始买入的信号。
+
+2、当W%R曲线从超买区开始向下回落，跌破20这条卖出线时，说明行情可能向下反转，是开始卖出的信号。
+
+3、当W%R曲线由超卖区向上突破50这条多空平衡线时，说明股价涨势较强，可考虑短线加码买入。
+
+4、当W%R曲线由超买区向下突破50这条多空平衡线时，说明股价跌势较强，可考虑短线加码卖出。
+
+
+### 相对强弱指标——RSI
+
+相对强弱指标RSI又叫力度指标，其英文全称为“Relative Strength Index”，由威尔斯·魏尔德﹝Welles Wilder﹞所创造的，是目前股市技术分析中比较常用的中短线指标。
+
+
+#### RSI指标的原理
+
+相对强弱指标RSI是根据股票市场上供求关系平衡的原理，通过比较一段时期内单个股票价格的涨跌的幅度或整个市场的指数的涨跌的大小来分析判断市场上多空双方买卖力量的强弱程度，从而判断未来市场走势的一种技术指标。
+
+从它构造的原理来看，与MACD、 TRIX等趋向类指标相同的是，RSI指标是对单个股票或整个市场指数的基本变化趋势作出分析，而与MACD、TRIX等不同的是，RSI指标是先求出单个股票若干时刻的收盘价或整个指数若干时刻收盘指数的强弱，而不是直接对股票的收盘价或股票市场指数进行平滑处理。
+
+相对强弱指标RSI是一定时期内市场的涨幅与涨幅加上跌幅的比值。它是买卖力量在数量上和图形上的体现，投资者可根据其所反映的行情变动情况及轨迹来预测未来股价走势。在实践中，人们通常将其与移动平均线相配合使用，借以提高行情预测的准确性。
+
+#### RSI指标的计算方法
+
+相对强弱指标RSI的计算公式有两种
+
+其一：
+
+假设A为N日内收盘价的正数之和，B为N日内收盘价的负数之和乘以（—1）
+
+这样，A和B均为正，将A、B代入RSI计算公式，则
+
+RSI（N）=A÷（A＋B）×100
+
+其二：
+
+RS（相对强度）=N日内收盘价涨数和之均值÷N日内收盘价跌数和之均值
+
+RSI（相对强弱指标）=100－100÷（1+RS）
+
+这两个公式虽然有些不同，但计算的结果一样。
+
+以14日RSI指标为例，从当起算，倒推包括当日在内的15个收盘价，以每一日的收盘价减去上一日的收盘价，得到14个数值，这些数值有正有负。这样，RSI指标的计算公式具体如下：
+
+A=14个数字中正数之和
+
+B=14个数字中负数之和乘以（—1）
+
+RSI（14）=A÷（A＋B）×100
+
+式中：A为14日中股价向上波动的大小
+
+B为14日中股价向下波动的大小
+
+A＋B为股价总的波动大小
+
+RSI 的计算公式实际上就是反映了某一阶段价格上涨所产生的波动占总的波动的百分比率，百分比越大，强势越明显；百分比越小，弱势越明显。RSI的取值介于0— 100之间。在计算出某一日的RSI值以后，可采用平滑运算法计算以后的RSI值，根据RSI值在坐标图上连成的曲线，即为RSI线。
+
+以日为计算周期为例，计算RSI值一般是以5日、10日、14日为一周期。另外也有以6日、12日、24日为计算周期。一般而言，若采用的周期的日数短，RSI指标反应可能比较敏感；日数较长，可能反应迟钝。目前，沪深股市中RSI所选用的基准周期为6日和12日。
+
+和其他指标的计算一样，由于选用的计算周期的不同，RSI 指标也包括日RSI指标、周RSI指标、月RSI指标年RSI指标以及分钟RSI指标等各种类型。经常被用于股市研判的是日RSI指标和周RSI指标。虽然它们的计算时的取值有所不同，但基本的计算方法一样。另外，随着股市软件分析技术的发展，投资者只需掌握RSI形成的基本原理和计算方法，无须去计算指标的数值，更为重要的是利用RSI指标去分析、研判股票行情。
+
+#### RSI的一般研判标准
+
+RSI的研判主要是围绕RSI的取值、长期RSI和短期RSI的交叉状况及RSI的曲线形状等展开的。一般分析方法主要包括RSI取值的范围大小、RSI数值的超卖超买情况、长短期RSI线的位置及交叉等方面。
+
+一、 RSI取值的大小
+
+RSI的变动范围在0——100之间，强弱指标值一般分布在20——80。
+
+RSI值 市场特征 投资操作
+
+80——100 极强 卖出
+
+50——80 强 买入
+
+20——50 弱 观望
+
+0——20 极弱 买入
+
+这里的“极强”、“强”、“弱”、“极弱”只是一个相对的分析概念，是一个相对的区域。有的投资者也可把它们取值为30、70或15、85。另外，对于所取的RSI的参数的不同以及不同的股票，RSI的取值大小的研判也会不同，在下面部分再详加介绍。
+
+二、 RSI数值的超买超卖
+
+一般而言，RSI的数值在80以上和20以下为超买超卖区的分界线。
+
+1、当RSI值超过80时，则表示整个市场力度过强，多方力量远大于空方力量，双方力量对比悬殊，多方大胜，市场处于超买状态，后续行情有可能出现回调或转势，此时，投资者可卖出股票。
+
+2、当RSI值低于20时，则表示市场上卖盘多于买盘，空方力量强于多方力量，空方大举进攻后，市场下跌的幅度过大，已处于超卖状态，股价可能出现反弹或转势，投资者可适量建仓、买入股票。
+
+3、当RSI值处于50左右时，说明市场处于整理状态，投资者可观望。
+
+4、对于超买超卖区的界定，投资者应根据市场的具体情况而定。一般市道中，RSI数值在80以上就可以称为超买区，20以下就可以称为超卖区。但有时在特殊的涨跌行情中，RSI的超卖超买区的划分要视具体情况而定。比如，在牛市中或对于牛股，超买区可定为90以上，而在熊市中或对于熊股，超卖区可定为10以下（对于这点是相对于参数设置小的RSI而言的，如果参数设置大，则RSI很难到达90以上和10以下）。
+
+三、长短期RSI线的交叉情况
+
+短期RSI是指参数相对小的RSI，长期RSI是指参数相对较长的RSI。比如，6日RSI和12日RSI中，6日RSI即为短期RSI，12日RSI即为长期RSI。长短期RSI线的交叉情况可以作为我们研判行情的方法。
+
+1、当短期RSI>长期RSI时，市场则属于多头市场；
+
+2、当短期RSI<长期RSI时，市场则属于空头市场；
+
+3、当短期RSI线在低位向上突破长期RSI线时，一般为RIS指标的“黄金交叉”，为买入信号；
+
+4、当短期RSI线在高位向下突破长期RSI线时，一般为RSI指标的“死亡交叉”，为卖出信号。
+
+
+
+ ### 中间意愿指标——CR
+
+CR指标又叫中间意愿指标，它和AR、BR指标又很多相似之处，但更有自己独特的研判功能，是分析股市多空双方力量对比、把握买卖股票时机的一种中长期技术分析工具。
+
+
+#### CR指标的原理
+
+CR指标同AR、BR指标有很多相似的地方，如计算公式和研判法则等，但它与AR、BR指标最大不同的地方在于理论的出发点有不同之处。CR指标的理论出发点是：中间价是股市最有代表性的价格。
+
+为避免AR、 BR指标的不足，在选择计算的均衡价位时，CR指标采用的是上一计算周期的中间价。理论上，比中间价高的价位其能量为“强”，比中间价低的价位其能量为“ 弱”。CR指标以上一个计算周期（如N日）的中间价比较当前周期（如日）的最高价、最低价，计算出一段时期内股价的“强弱”，从而在分析一些股价的异常波动行情时，有其独到的功能。
+
+另外，CR指标不但能够测量人气的热度、价格动量的潜能，而且能够显示出股价的压力带和支撑带，为分析预测股价未来的变化趋势，判断买卖股票的时机提供重要的参考。
+
+#### CR指标的计算方法
+
+由于选用的计算周期不同，CR指标也包括日CR指标、周CR指标、月CR指标、年CR指标以及分钟CR指标等很多种类型。经常被用于股市研判的是日CR指标和周CR指标。虽然它们计算时取值有所不同，但基本的计算方法一样。
+
+以日CR指标为例，其计算公式为：
+
+CR（N日）=P1÷P2×100
+
+式中，P1=∑（H－YM），表示N日以来多方力量的总和
+
+P2=∑（YM－L），表示N日以来空方力量的总和
+
+H表示今日的最高价，L表示今日的最低价
+
+YM表示昨日（上一个交易日）的中间价
+
+CR计算公式中的中间价其实也是一个指标，它是通过对昨日（YM）交易的最高价、最低价、开盘家和收盘价进行加权平均而得到的，其每个价格的权重可以人为地选定。目前比较常用地中间价计算方法有四种：
+
+1、M=（2C+H+L）÷4
+
+2、M=（C+H+L+O）÷4
+
+3、M=（C+H+L）÷3
+
+4、M=（H+L）÷2
+
+式中，C为收盘价，H为最高价，L为最低价，O为开盘价
+
+从四种中间价的计算方法来看，对四种价格的重视程度是不一样的，三种都是选用了收盘价，可见，收盘价在技术分析中的重要性。
+
+和其他技术指标一样，在实战中，投资者不需要进行CR指标的计算，主要是了解CR的计算方法，以便更加深入地掌握CR指标的实质，为运用指标打下基础。
+
+#### CR指标的一般研判标准
+
+CR指标的一般研判标准主要集中在CR数值的取值范围、CR指标曲线的形态以及CR指标曲线与股价曲线的配合等方面来考察。
+
+一、CR指标的取值
+
+1、从CR的计算公式我们可以看出，CR指标很容易出现负值，但按通行的办法，在CR指标研判中，一旦CR数值出现负值，一律当成0对待。
+
+2、和AR、BR指标一样，CR值为100时也表示中间的意愿买卖呈平衡状态。
+
+3、当CR数值在75——125之间（有的设定为80——150）波动时，表明股价属于盘整行情，投资者应以观望为主。
+
+4、在牛市行情中（或对于牛股），当CR数值大于300时，表明股价已经进入高价区，可能随时回挡，应择机抛出。
+
+5、对于反弹行情而言，当CR数值大于200时，表明股价反弹意愿已经到位，可能随时再次下跌，应及时离场。
+
+6、在盘整行情中，当CR数值在40以下时，表明行情调整即将结束，股价可能随时再次向上，投资者可及时买进。
+
+7、在熊市行情末期，当CR数值在30以下时，表明股价已经严重超跌，可能随时会反弹向上。投资者可逢低吸纳。
+
+8、CR指标对于高数值的研判的准确性要高于CR对低数值的研判。即提示股价进入高价位区的能力比提示低价位区强。
+
+二、CR指标曲线的形态
+
+CR指标的形态的研判主要是针对CR曲线在顶部和低部出现的不同形态而言的。
+
+1、当CR曲线在高位形成M头或三重顶等顶部反转形态时，可能预示着行情由强势转为弱势，股价即将大跌（特别是对于前期涨幅过大的股票），如果股价的K线也出现同样形态则更可确认，其跌幅可以用M头或三重顶形态理论来研判。
+
+2、当CR曲线在低位出现W底或三重底等底部反转形态时，可能预示着行情由弱势转为强势，股价即将反弹向上，如果股价K线也出现同样形态则更可确认，其涨幅可以用W底或三重底等形态来判断。
+
+3、相对而言，CR指标的高位M头或三重顶的判断的准确性要比其底部的W底或三重底要高。
+
+三、CR曲线与股价曲线配合使用
+
+在一定程度上，CR指标具有领先股价走势的示警作用，尤其是在股价见顶或筑底方面，能能比股价曲线领先出现征兆。若股价曲线与CR指标曲线之间出现背离现象，则可能预示着股价走势即将反转。CR指标曲线与股价曲线的配合使用主要从以下几方面进行的。
+
+1、当CR指标曲线节节向上攀升，而股价曲线也同步上升，则意味着股价走势是处于强势上涨的阶段，股价走势将维持向上攀升的态势，投资者可坚决持股待涨。
+
+2、当CR指标曲线继续下跌，而股价曲线也同步下跌，则意味着股价走势是处于弱势下跌的阶段，弱势格局难以改变，此时，投资者应以持币观望为主。
+
+3、当CR指标曲线开始从高位掉头向下回落，而股价曲线却还在缓慢向上扬升，则意味着股价走势可能出现“顶背离”现象，特别是股价刚刚经历过了一段比较大涨幅的上升行情以后。当CR指标曲线在高位出现“顶背离现象”后，投资者应及时获利了结。
+
+4、当CR指标曲线从底部开始向上攀升，而股价曲线却继续下跌，则意味着股价走势可能出现“底背离”现象，特别是股价前期经过了一轮时间比较长、跌幅比较大的下跌行情以后。当CR指标曲线在底部出现“底背离”现象以后，投资者可以少量分批建仓。
+
+5、CR指标对“顶背离”研判的准确性要远远高于对“底背离”的研判。
+
+
+### 停损指标——SAR
+
+SAR指标又叫抛物线指标或停损转向操作点指标，其全称叫“Stop and Reveres，缩写SAR”，是由美国技术分析大师威尔斯·威尔德（Wells Wilder）所创造的，是一种简单易学、比较准确的中短期技术分析工具。
+
+
+#### SAR指标的原理
+
+我们从SAR 指标英文全称知道它有两层含义。一是“stop”，即停损、止损之意，这就要求投资者在买卖某个股票之前，先要设定一个止损价位，以减少投资风险。而这个止损价位也不是一直不变的，它是随着股价的波动止损位也要不断的随之调整。如何既可以有效地控制住潜在的风险，又不会错失赚取更大收益的机会，是每个投资者所追求的目标。但是股市情况变幻莫测，而且不同的股票不同时期的走势又各不相同，如果止损位设的过高，就可能出现股票在其调整回落时卖出，而卖出的股票却从此展开一轮新的升势，错失了赚取更大利润的机会，反之，止损位定的过低，就根本起不到控制风险的作用。因此，如何准确地设定止损位是各种技术分析理论和指标所阐述的目的，而SAR指标在这方面有其独到的功能。
+
+SAR 指标的英文全称的第二层含义是“Reverse”，即反转、反向操作之意，这要求投资者在决定投资股票前先设定个止损位，当价格达到止损价位时，投资者不仅要对前期买入的股票进行平仓，而且在平仓的同时可以进行反向做空操作，以谋求收益的最大化。这种方法在有做空机制的证券市场可以操作，而目前我国国内市场还不允许做空，因此投资者主要采用两种方法，一是在股价向下跌破止损价位时及时抛出股票后持币观望，二是当股价向上突破SAR指标显示的股价压力时，及时买入股票或持股待涨。
+
+#### SAR指标的计算方法
+
+和MACD、 DMI等指标相同的是，SAR指标的计算公式相当烦琐。SAR的计算工作主要是针对每个周期不断变化的SAR的计算，也就是停损价位的计算。在计算SAR 之前，先要选定一段周期，比如n日或n周等，n天或周的参数一般为4日或4周。接下来判断这个周期的股价是在上涨还是下跌，然后再按逐步推理方法计算 SAR值。
+
+计算日SAR为例，每日SAR的计算公式如下：
+
+SAR（n）=SAR（n－1）+AF<EP(n－1)—SAR（n－1）>
+
+其中，SAR（n）为第n日的SAR值，SAR（n－1）为第（n－1）日的值
+
+AF为加速因子（或叫加速系数），EP为极点价（最高价或最低价）
+
+在计算SAR值时，要注意以下几项原则：
+
+1、 一次计算SAR值时须由近期的明显高低点起的第n天开始。
+
+2、如果是看涨的行情，则SAR（0）为近期底部最低价；如果是看跌行情，则SAR（0）为近期顶部的最高价。
+
+3、加速因子AF有向上加速因子和向下加速因子的区分。若是看涨行情，则为向上加速因子；若是看跌行情，则为向下加速因子。
+
+4、加速因子AF的初始值一直是以0.02为基数。如果是在看涨行情中买入股票后，某天的最高价比前一天的最高价还要高，则加速因子AF递增0.02，并入计算。但加速因子AF最高不超过0.2。反之，看跌行情中也以此类推。
+
+5、如果在看涨行情中，计算出的某日的SAR值比当日或前一日的最低价高，则应以当日或前一日的最低价为该日的SAR值。如果在看跌行情中，计算出的某日的 SAR值比当日或前一日的最高价低，则应以当日或前一日的最高价为某日的SAR值。总之，SAR值不得定于当日或前一日的行情价格变动幅度之内。
+
+6、任何一次行情的转变，加速因子AF都必须重新由0.02起算。
+
+7、SAR指标周期的计算基准周期的参数为2，如2日、2周、2月等，其计算周期的参数变动范围为2—8。
+
+8、SAR指标的计算方法和过程比较烦琐，对于投资者来说只要掌握其演算过程和原理，在实际操作中并不需要投资者自己计算SAR值，更重要的是投资者要灵活掌握和运用SAR指标的研判方法和功能。
+
+#### SAR指标的一般研判标准
+
+由于SAR指标简单易懂、操作方便、稳重可靠等优势，因此，SAR指标又称为“傻瓜”指标，被广大投资者特别是中小散户普遍运用。
+
+一、SAR指标的一般研判标准
+
+SAR指标的一般研判标准包括以下四方面：
+
+1、当股票股价从SAR曲线下方开始向上突破SAR曲线时，为买入信号，预示着股价一轮上升行情可能展开，投资者应迅速及时地买进股票。
+
+2、当股票股价向上突破SAR曲线后继续向上运动而SAR曲线也同时向上运动时，表明股价的上涨趋势已经形成，SAR曲线对股价构成强劲的支撑，投资者应坚决持股待涨或逢低加码买进股票。
+
+3、当股票股价从SAR曲线上方开始向下突破SAR曲线时，为卖出信号，预示着股价一轮下跌行情可能展开，投资者应迅速及时地卖出股票。
+
+4、当股票股价向下突破SAR曲线后继续向下运动而SAR曲线也同时向下运动，表明股价的下跌趋势已经形成，SAR曲线对股价构成巨大的压力，投资者应坚决持币观望或逢高减磅。
+
+二、SAR指标的作用
+
+与其他技术指标相比，SAR指标对于一般投资者对行情研判提供了相当大的帮助作用，具体表现在以下三方面：
+
+1、持币观望
+
+当一个股票的股价被SAR指标压制在其下方并一直向下运动时，投资者可一路持币观望，直到股价向上突破SAR指标的压力并发出明确的买入信号时，才可考虑是否买入股票。
+
+2、持股待涨
+
+当一个股票的股价在SAR指标上方并依托SAR指标一直向上运动时，投资者可一路持股待涨，直到股价向下突破SAR指标的支撑并发出明确的卖出信号时，才去考虑是否卖出股票。
+
+3、明确止损
+
+SAR 指标具有极为明确的止损功能，其止损又分为买入止损和卖出止损。卖出止损是指当SAR发出明确的买入信号时，不管投资者以前是在什么价位卖出的股票，是否亏损，投资者都应及时买入股票，持股待涨。买入止损是指当SAR指标发出明确的卖出信号时，不管投资者以前是在什么价位买入股票，是否赢利，投资者都应及时卖出股票，持币观望。
+
+三、SAR指标的优点
+
+SAR指标具有以下优点：
+
+1、操作简单，买卖点明确，出现买卖信号即可进行操作，特别适合于入市时间不长、投资经验不丰富、缺乏买卖技巧的中小投资者使用。
+
+2、适合于连续拉升的“牛股”，不会轻易被主力震仓和洗盘。
+
+3、适合于连续阴跌的“熊股”，不会被下跌途中的反弹诱多所蒙骗。
+
+4、适合于中短线的波段操作。
+
+5、长期使用SAR指标虽不能买进最低价，也不能卖出最高价，但可以避免长期套牢的危险，同时又能避免错失牛股行情。
+
+
+
 ## 4.4. 特征重要性分析和降维
 
 分析股价数据特征，主要对开盘价、收盘价、最高价、最低价、涨跌幅、成交额、换手率、量比、市盈率、市净率、市销率、流通股本、总股本、小、中、大、特大单买入卖出额等特征进行分析，并且对以上特征应用了指数移动平均、差分自相关等数据处理手段。
 
+* 股价、成交量特征
+<center><img src='project\feature_engineering\30_price_amount.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\1_open_tech.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\2_high_tech.png' width=1060></img></center>
+* MACD 异步移动均线
+<center><img src='project\feature_engineering\31_MACD.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\3_low_tech.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\4_close_tech.png' width=1060></img></center>
+* 布林线和随机指标KDJ
+<center><img src='project\feature_engineering\32_boll_kdj.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\5_change_percentage_tech.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\7_turnover_rate_tech.png' width=1060></img></center>
+* 开盘价和相关强弱指数RSI
+<center><img src='project\feature_engineering\33_open_rsi.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\8_volume_ratio_tech.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\9_pe_tech.png' width=1060></img></center>
+* 威廉指标WR和中间意愿指标CR
+<center><img src='project\feature_engineering\34_cr_ma.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\20_buy_extra_tech.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\22_fourier_transforms.png' width=1060></img></center>
+*短线超买超卖指标CCI、成交量变异率VR和波动幅度TR
+<center><img src='project\feature_engineering\35_cci_tr_vr.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\23_close_price_correlations.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\24_ARIMA.png' width=1060></img></center>
+*动向指标DMI
+<center><img src='project\feature_engineering\36_close_DMI.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\25_xgboost_training.png' width=1060></img></center>
 
-<center><img src='project\feature_engineering\26_feature_importance.png' width=1060></img></center>
+*傅里叶变换和逆变换
+<center><img src='project\feature_engineering\40_Fourier_transforms.png' width=1060></img></center>
+
+
+*收盘价逐日相关性 price correlation
+<center><img src='project\feature_engineering\50_Close_price_correlations.png' width=1060></img></center>
+
+
+* 特征重要性分析 xgboost回归
+<center><img src='project\feature_engineering\61_Feature_importance.png' width=1060></img></center>
 
 
 
