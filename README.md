@@ -818,35 +818,79 @@ SAR指标具有以下优点：
 <center><img src='project\feature_engineering\34_cr_ma.png' width=1060></img></center>
 
 
-*短线超买超卖指标CCI、成交量变异率VR和波动幅度TR
+* 短线超买超卖指标CCI、成交量变异率VR和波动幅度TR
 <center><img src='project\feature_engineering\35_cci_tr_vr.png' width=1060></img></center>
 
 
-*动向指标DMI
+* 动向指标DMI
 <center><img src='project\feature_engineering\36_close_DMI.png' width=1060></img></center>
 
 
-*傅里叶变换和逆变换
+* 傅里叶变换和逆变换
 <center><img src='project\feature_engineering\40_Fourier_transforms.png' width=1060></img></center>
 
+* 股价频谱分析
 
-*收盘价逐日相关性 price correlation
+<center><img src='project\feature_engineering\41_Fourier_components.png' width=1060></img></center>
+
+
+* 收盘价逐日相关性 price correlation
 <center><img src='project\feature_engineering\50_Close_price_correlations.png' width=1060></img></center>
 
 
 * 特征重要性分析 xgboost回归
 <center><img src='project\feature_engineering\61_Feature_importance.png' width=1060></img></center>
 
+* 特征重要性误差分析
+<center><img src='project\feature_engineering\60_Training_Vs_Validation_Error.png' width=1060></img></center>
 
+
+我们可以看到，在去除强相关性的特征后，验证集的误差随着训练次数的迭代有所增加，表明模型出现了过拟合。
+
+由于在股价数据中，包含有大量与股价特征强相关的数据，比如开盘价、股价动量（即为前一日的收盘价），股价七日均值等，在使用xgboost进行回归时，这些特征会因强相关特性而独占重要性指标，比如股价动量重要性可达到0.8以上，这样会削弱其他指标的重要性度量。
+
+所以在实际操作中，为了将强相关因素排除，更多的利用其他指标构建股价的特征关系，我们删除了部分特征，并得到了以上特征重要性直方图。以上最重要的特征其重要性也在0.1左右，我们尽可能的实现特征与股价强相关的剥离，并试图发现股价与其他特征的关联。
+
+* 降维
+
+降维使用的是PCA主成分分析，并且保留75%的特征进行降维。
 
 # 5. 训练模型
 
+## Keras框架
+Keras 是一个用 Python 编写的高级神经网络 API，它能够以 TensorFlow, CNTK, 或者 Theano 作为后端运行。Keras 的开发重点是支持快速的实验。能够以最小的时延把你的想法转换为实验结果，是做好研究的关键。
 
+由于本项目基于快速成型的模型搭建原则，所以应用Keras这种高层API更加方便。
+
+>允许简单而快速的原型设计（由于用户友好，高度模块化，可扩展性）。
+同时支持卷积神经网络和循环神经网络，以及两者的组合。
+在 CPU 和 GPU 上无缝运行。
+
+**Keras的特征** 
+
+>用户友好。 Keras 是为人类而不是为机器设计的 API。它把用户体验放在首要和中心位置。Keras 遵循减少认知困难的最佳实践：它提供一致且简单的 API，将常见用例所需的用户操作数量降至最低，并且在用户错误时提供清晰和可操作的反馈。
+
+>模块化。 模型被理解为由独立的、完全可配置的模块构成的序列或图。这些模块可以以尽可能少的限制组装在一起。特别是神经网络层、损失函数、优化器、初始化方法、激活函数、正则化方法，它们都是可以结合起来构建新模型的模块。
+
+>易扩展性。 新的模块是很容易添加的（作为新的类和函数），现有的模块已经提供了充足的示例。由于能够轻松地创建可以提高表现力的新模块，Keras 更加适合高级研究。
+
+>基于 Python 实现。 Keras 没有特定格式的单独配置文件。模型定义在 Python 代码中，这些代码紧凑，易于调试，并且易于扩展。
+
+
+
+## 使用VAE生成模型获取股价特征的分布特性
+
+TODO
+
+
+## 使用GAN网络生成股价预测数据
+
+TODO
 
 
 # 6. 评估和调参
 
-TODO
+## keras强化学习框架
 
 # 7. 可视化
 
