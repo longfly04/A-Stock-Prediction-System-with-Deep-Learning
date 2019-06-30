@@ -16,6 +16,35 @@ from sklearn.preprocessing import StandardScaler
 import sys
 sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
 
+indicators = { # 所有的数据指标名称与对应指标类型
+    'daily':'日线行情',
+    'daily_indicator':'每日指标',
+    'moneyflow': '个股资金流向',
+    'res_qfq':'前复权行情',
+    'res_hfq': '后复权行情',
+    'income': '利润表',
+    'balancesheet': '资产负债表',
+    'cashflow': '现金流量表',
+    'forecast': '业绩预告',
+    'express': '业绩快报',
+    'dividend': '分红送股',
+    'financeindicator': '财务指标',
+    'HSGTflow': '沪深港通资金流向',
+    'margin': '融资融券交易汇总',
+    'pledge': '股权质押统计',
+    'repurchase': '股票回购',
+    'desterilization': '限售股解禁',
+    'block': '大宗交易',
+    'shibor': '上海银行间同业拆放利率',
+    'shiborquote': '上海银行间同业拆放利率报价汇总',
+    'shiborLPR': '贷款基础利率',
+    'libor': '伦敦同业拆借利率',
+    'hibor': '香港银行同行业拆借利率',
+    'wen': '温州民间融资综合利率指数',
+    'tech': '技术分析',
+    'fft': '傅里叶变换',
+} 
+
 class DataLoader():
     """加载数据 并将数据处理给LSTM模型使用
     
@@ -24,6 +53,7 @@ class DataLoader():
     def __init__(self, filename, split, cols):
         # 参数为数据集的路径、训练集和验证集的分割以及数据的列，主要使用的收盘价和成交量
         # 为训练集和测试集数据和数据长度赋值
+
         dataframe = pd.read_csv(filename)
         i_split = int(len(dataframe) * split)
         # 定义标签的列和特征的列
@@ -103,7 +133,7 @@ class DataLoader():
         window = self.data_train[i:i+seq_len]
         y_window = self.y_train[i:i+seq_len]
         # 在时间窗口内进行标准化
-        # window = self.normalise_windows(window, single_window=True)[0] if normalise else window
+        window = self.normalise_windows(window, single_window=True)[0] if normalise else window
 
         # 这里要注意返回的时间窗口的秩 x应该是一个50个时间步的505维向量 y应该是50个时间步的1维向量
         x = window
@@ -112,14 +142,17 @@ class DataLoader():
 
     def normalise_windows(self, window_data, single_window=False):
         '''Normalise window with a base value of zero
-        对窗口内数据进行归一化：对以第一行数据为基准，计算窗口内其他数据与第一行数据的比值，再减去1使得基准数为0。
+        对窗口内数据进行标准化 对每个特征在50个时间步内进行标准化
         '''
-        normalised_data = []
-        window_data = [window_data] if single_window else window_data
+        normalised_data = pd.DataFrame(window_data)
+
+        window_data = [window_data.T] if single_window else window_data
         for window in window_data:
-            normalised_window = StandardScaler.fit_transform(np.arange(50), window)
+            scalar = StandardScaler()
+            scalar.fit(window)
+            normalised_window = scalar.transform(window)
             normalised_data.append(normalised_window)
-        return np.array(normalised_data)
+        return np.array(normalised_data.T)
 
 class Timer():
     # 定义一个计时器类 stop方法输出用时
@@ -277,14 +310,78 @@ def plot_results_multiple(predicted_data, true_data, prediction_len):
         plt.legend()
     plt.show()
 
+
+def get_data_statistics(data, fill_inf=False):# 获取数据的统计信息 默认不对无穷数进行处理
+    print('1.数据集共有{}个样本，{}个特征。'.format(data.shape[0], data.shape[1]))
+
+    print('2.数据集基本信息：')
+    print(data.describe())
+
+    print('3.数据集特征和数据类型情况：')
+    datatype = pd.DataFrame({'Feature Names':data.columns, 'Data Types':str(data.dtypes)})
+    indicators_idx = {} # 指标索引 找到数据集中不同类别指标的位置
+    indicators_count = 0
+    for key in indicators:
+        indicators_idx[key+'_idx'] = [f.startswith(key+'_') for f in datatype['Feature Names'].tolist()]
+        print(indicators[key] + ' 特征数量为：' + str(indicators_idx[key+'_idx'].count(True)) + '个 ')
+        indicators_count = indicators_count + indicators_idx[key+'_idx'].count(True)
+    # 总的特征数减去daily_indicator 的特征数 因为这个特征在daily中已经包含了
+    indicators_count = indicators_count - indicators_idx['daily_indicator_idx'].count(True)
+    print('有标记特征数量合计{}个，其他特征{}个'.format(indicators_count, data.shape[1]-indicators_count))
+
+    print('4.数据集包含空值情况统计：')
+    print(data.isna().sum().sum())
+
+    print('5.数据集无穷数情况统计：')
+    # 获取特征名称的np数组
+    feature_name = np.array(data.columns).astype(str)
+    # 获取特征取值的np数组
+    values = np.array(data.values).astype(float)
+    # 获取存在无穷数据的索引
+    idx = np.where(np.isinf(values)==True)
+    # 将无穷数据的索引zip成坐标
+    idx_list = list(zip(idx[0], idx[1]))
+
+    while len(idx_list) > 0:
+        print('数据集中共包含{}个无穷数'.format(len(idx_list)))
+        print('以下特征出现了无穷数：')
+        # 获取出现了无穷数据的特征名称的索引
+        feature_idx = set(idx[1])
+        # 将每个特征列 除了无穷数据之外的数据的最大值 保存成字典
+        feature_max = {}
+        for _ in feature_idx:
+            print(feature_name[_])
+            # 将当前特征列的有效数据取出来 并计算最大值 
+            # 在显示特征名称这个循环中顺便处理这个列的无穷数据
+            # 首先获得有效数据的索引
+            idx_significant = np.where(np.isinf(values[:,_])==False)
+            # 特征最大值的字典 key为特征名称 value为最大值
+            feature_max[feature_name[_]] = data[feature_name[_]].iloc[idx_significant].max()
+        print('无穷数的索引为：')
+        print(idx_list)
+        if fill_inf:# 对无穷数进行处理 用当前列数据中的 最大值 或者用0 来填充
+            for i in idx_list:
+                if np.isinf(data.iloc[i]):
+                    data.iloc[i] = feature_max[feature_name[i[1]]]
+            print('已将无穷数填充为特征列最大值。')
+            # 再次检验是否有无穷数
+            values = np.array(data.values).astype(float)
+            idx = np.where(np.isinf(values)==True)
+            idx_list = list(zip(idx[0], idx[1]))
+
+    print('数据集中无无穷数。')
+    return data
+
+
 def main():
-    configs = json.load(open('bin\lstm_config.json', 'r', encoding='utf-8'))
+    configs = json.load(open('bin\models\lstm_config.json', 'r', encoding='utf-8'))
     if not os.path.exists(configs['model']['save_dir']): os.makedirs(configs['model']['save_dir'])
 
     # 为了充分利用特征集的所有特征，不再仅仅使用收盘价和成交量
     file_name = 'dataset\\Feature_engineering_20190624_083438.csv'
     data_csv = pd.read_csv(file_name)
-    features = np.array(data_csv.columns).astype(str).tolist()
+    data_csv = get_data_statistics(data_csv, fill_inf=True)
+    features = np.array(data.columns).astype(str).tolist()
     
     data = DataLoader(
         configs['data']['filename'],

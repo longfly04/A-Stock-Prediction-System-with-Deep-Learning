@@ -34,21 +34,28 @@ indicators = { # 所有的数据指标名称与对应指标类型
 }    
 
 
-def gelu(x):# 高斯误差激活函数
-    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * math.pow(x, 3))))
-
-def normalization(data):# 归一化
-    from sklearn.preprocessing import StandardScaler
-    data_norm = StandardScaler().fit_transform(data)
-    return data_norm
-
-def pca(data, n_components=0.75):# 降维 默认75%的维度用来还原主成分
+def pca(data):# 降维 
+    import sklearn.preprocessing as pp
     from sklearn.decomposition import PCA
-    pca = PCA(n_components=n_components)
-    data_pca = pca.fit_transform(data)
+
+    # sklearn的一系列标准化 归一化函数 想用哪里点哪里
+    # 标准化 均值为0 方差为1
+    std_scalar = pp.StandardScaler()
+    data_std = std_scalar.fit_transform(data)
+    # 规范化 默认使用L2正则
+    normer = pp.Normalizer()
+    data_norm = normer.fit_transform(data)
+    # 最大最小归一化 所有值都缩放到（0，1）
+    minmax_scalar = pp.MinMaxScaler()
+    data_minmax = minmax_scalar.fit_transform(data)
+
+    # PCA类 用MLE算法根据特征的方差分布情况自己去选择一定数量的主成分特征来降维
+    pca = PCA(n_components=200)
+    data_pca = pca.fit_transform(data_std)
+    print(pca.explained_variance_ratio_)
     return data_pca
 
-def vae(data): #通过VAE提取分布信息
+def vae(X_data, y): #通过VAE提取分布信息
     # 对时间序列数据使用自编码器 没有充分的挖掘时间序列的特性 模型极容易发散
     from scipy.stats import norm
 
@@ -61,35 +68,18 @@ def vae(data): #通过VAE提取分布信息
     import keras
 
     batch_size = 100
-    original_dim = 464
-    latent_dim = 128 # 隐变量取2维只是为了方便后面画图
-    intermediate_dim = 256
+    original_dim = 200
+    latent_dim = 128 # 隐变量 需要确保模型有足够的容量
+    intermediate_dim = 200
     epochs = 50
 
-    # 加载数据
-    y = data['daily_close'].astype(float)
-    # 训练数据中的特征，因为开盘价、收盘价、最高价、最低价都与收盘价y强相关，这些特征会影响其他特征的作用
-    # 所以在评估时，将其删除
-    # 以下是在测试中重要性大于0.2的特征
-    X = data.drop(columns=['daily_close','daily_open','daily_low','daily_high','tech_momentum',
-                            'tech_ma7', 'tech_ma21', 'tech_ema', 'tech_middle', 'tech_close_-1_s', 
-                            'tech_open_2_sma', 'tech_open_2_s','tech_boll_lb', 'tech_close_10_sma', 'tech_close_10.0_le', 
-                            'tech_middle_14_sma','tech_middle_20_sma', 'tech_close_20_sma', 'tech_close_26_ema','tech_boll',
-                            'tech_boll_ub','daily_pre_close','res_qfq_close','res_hfq_close','tech_close_50_sma'
-                            ])
-    # 减去以上特征列之后 包括将y标签单独提取出来
-    # 数据特征集中的特征维度变成 489 - 25 = 464
-    # 也就是说 特征集的original_dim = 464
-
-    # 对当前的特征进行归一化
-    X = pd.DataFrame(normalization(X))
+    X = pd.DataFrame(X_data)
     
     train_samples = int(X.shape[0] * 0.90)
     X_train = X.iloc[:train_samples]
     X_test = X.iloc[train_samples:]
     y_train = y.iloc[:train_samples]
     y_test = y.iloc[train_samples:]
-
 
     #LossHistory类，保存loss和acc 并且plot
     class LossHistory(keras.callbacks.Callback):
@@ -168,6 +158,7 @@ def vae(data): #通过VAE提取分布信息
     vae.summary()
 
     vae.fit(X_train,
+            # y=y_train,
             shuffle=True,
             epochs=epochs,
             batch_size=batch_size,
@@ -223,7 +214,7 @@ def get_data_statistics(data, fill_inf=False):# 获取数据的统计信息 默�
     # 将无穷数据的索引zip成坐标
     idx_list = list(zip(idx[0], idx[1]))
 
-    if len(idx_list) > 0:
+    while len(idx_list) > 0:
         print('数据集中共包含{}个无穷数'.format(len(idx_list)))
         print('以下特征出现了无穷数：')
         # 获取出现了无穷数据的特征名称的索引
@@ -249,20 +240,9 @@ def get_data_statistics(data, fill_inf=False):# 获取数据的统计信息 默�
             values = np.array(data.values).astype(float)
             idx = np.where(np.isinf(values)==True)
             idx_list = list(zip(idx[0], idx[1]))
-            if len(idx_list) > 0:
-                print('数据集中怎么还有{}个无穷数？？？'.format(len(idx_list)))
-                print('以下特征出现了无穷数：')
-                feature_idx = set(idx[1])
-                feature_max = {}
-                for _ in feature_idx:
-                    print(feature_name[_])
-                    feature_max[feature_name[_]] = data[feature_name[_]].max()
-                print('无穷数的索引为：')
-                print(idx_list)
-        return idx_list
-    else:
-        print('数据集中无无穷数。')
 
+    print('数据集中无无穷数。')
+    return data
 
 if __name__ == "__main__":
     # 读取已经进行过特征工程的数据
@@ -279,16 +259,14 @@ if __name__ == "__main__":
     
     # 对nan数据填0
     data = data.fillna(0)
-    get_data_statistics(data, fill_inf=True)
-
-    # 对数据进行归一化
-    data_norm = normalization(data)
+    data = get_data_statistics(data, fill_inf=True)
 
     # 降维
     data_pca = pca(data)
     
     # 训练自编码器
-    vae(data)
+    y = data['daily_close'].astype(float)
+    vae(data_pca, y)
 
     
 
