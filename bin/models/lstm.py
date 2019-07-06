@@ -6,9 +6,10 @@ import json
 import time
 import datetime as dt
 from numpy import newaxis
-
+import argparse
 import matplotlib.pyplot as plt
-from keras.layers import Dense, Activation, Dropout, LSTM
+
+from keras.layers import Dense, Activation, Dropout, LSTM, Flatten
 from keras.models import Sequential, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.preprocessing import StandardScaler
@@ -16,143 +17,97 @@ from sklearn.preprocessing import StandardScaler
 import sys
 sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
 
-indicators = { # 所有的数据指标名称与对应指标类型
-    'daily':'日线行情',
-    'daily_indicator':'每日指标',
-    'moneyflow': '个股资金流向',
-    'res_qfq':'前复权行情',
-    'res_hfq': '后复权行情',
-    'income': '利润表',
-    'balancesheet': '资产负债表',
-    'cashflow': '现金流量表',
-    'forecast': '业绩预告',
-    'express': '业绩快报',
-    'dividend': '分红送股',
-    'financeindicator': '财务指标',
-    'HSGTflow': '沪深港通资金流向',
-    'margin': '融资融券交易汇总',
-    'pledge': '股权质押统计',
-    'repurchase': '股票回购',
-    'desterilization': '限售股解禁',
-    'block': '大宗交易',
-    'shibor': '上海银行间同业拆放利率',
-    'shiborquote': '上海银行间同业拆放利率报价汇总',
-    'shiborLPR': '贷款基础利率',
-    'libor': '伦敦同业拆借利率',
-    'hibor': '香港银行同行业拆借利率',
-    'wen': '温州民间融资综合利率指数',
-    'tech': '技术分析',
-    'fft': '傅里叶变换',
-} 
-
 class DataLoader():
-    """加载数据 并将数据处理给LSTM模型使用
-    
+    """加载数据 并将数据处理给LSTM模型 
+    切分训练和测试集 训练集以1个时间步为间隔 测试集以1个序列长度为间隔（50个时间步）
     """
-
-    def __init__(self, filename, split, cols):
-        # 参数为数据集的路径、训练集和验证集的分割以及数据的列，主要使用的收盘价和成交量
-        # 为训练集和测试集数据和数据长度赋值
-
-        dataframe = pd.read_csv(filename)
-        i_split = int(len(dataframe) * split)
+    def __init__(self, data, split, cols):
+        '''
+        参数为数据集的路径、训练集和验证集的分割以及数据的列，主要使用的收盘价和成交量
+        为训练集和测试集数据和数据长度赋值
+        训练特征集为488维数据
+        '''
+        i_split = int(len(data) * split)
         # 定义标签的列和特征的列
-        self.y_tag = ['daily_close']
-        self.index_tag = ''
-        self.ignore_features = ['Unnamed: 0', 'Unnamed: 0.1', 'cal_date', 'daily_trade_date',]
+        self.y_tag = ['daily_close'] # 标签
+        self.index_tag = [] # 索引
+        self.ignore_features = [] # 需要忽略的特征
         self.feature_cols = cols
         for col in self.ignore_features or self.y_tag:
-            self.feature_cols.remove(col)
+            try:
+                self.feature_cols.remove(col)
+            except ValueError as e:
+                print(col + ' is already removed.' + e)
         
         # 数据切分 
-        self.data_train = dataframe.get(self.feature_cols).values[:i_split]
-        self.data_test  = dataframe.get(self.feature_cols).values[i_split:]
-        self.y_train = dataframe.get(self.y_tag).values[:i_split]
-        self.y_test = dataframe.get(self.y_tag).values[i_split:]
+        self.data_train = data.get(self.feature_cols).values[:i_split]
+        self.data_test  = data.get(self.feature_cols).values[i_split:]
+        self.y_train = data.get(self.y_tag).values[:i_split]
+        self.y_test = data.get(self.y_tag).values[i_split:]
         self.len_train = len(self.data_train)
         self.len_test = len(self.data_test)
         self.len_train_windows = None
 
-    def get_test_data(self, seq_len, normalise):
+    def get_test_data(self, seq_len, normalise, overlap=False):
         '''
-        数据窗口：以定义好的序列长度为窗口长度，1为步长，从测试集第一个数据开始，截取测试数据
-        Create x, y test data windows
-        Warning: batch method, not generative, make sure you have enough memory to
-        load data, otherwise reduce size of the training split.
+        测试集：以序列长度（50个时间步）为间隔，测试模型预测序列的效果，与训练集使用同样的切片和标准化函数 overlap表示测试集是否是重叠模式
+        输出：test_x的维度是（5，50，488） test_y维度是（5，50，1）
         '''
-        data_windows = []
-        y_windows = []
-        for i in range(self.len_test - seq_len):
-            data_windows.append(self.data_test[i:i+seq_len])
-            y_windows.append(self.y_test[i:i+seq_len])
-        data_windows = np.array(data_windows).astype(float)
-        data_windows = self.normalise_windows(data_windows, single_window=False) if normalise else data_windows
-        # x特征集为除了最后一列数据之外的数据 y标签为最后一个记录的第一列特征
-        x = data_windows
-        y = y_windows
-        return x,y
+        test_x = []
+        test_y = []
+        if overlap:
+            for i in range(self.len_test - seq_len):
+                x, y = self._next_window(i, seq_len, normalise, train_flag=False)
+                test_x.append(x)
+                test_y.append(y)
+        else:
+            for i in range(int(self.len_test/seq_len)):
+                x, y = self._next_window(i*seq_len, seq_len, normalise, train_flag=False)
+                test_x.append(x)
+                test_y.append(y)
+        return np.array(test_x), np.array(test_y)
 
     def get_train_data(self, seq_len, normalise):
         '''
-        使用next window方法获取数据窗口
-        Create x, y train data windows
-        Warning: batch method, not generative, make sure you have enough memory to
-        load data, otherwise use generate_training_window() method.
+        训练集：以1个时间步为间隔，x和y都是相同长度的序列
+        输出：data_x 维度（2364，50，488） ，data_y 维度（2364，50，1）
         '''
         data_x = []
         data_y = []
         for i in range(self.len_train - seq_len):
-            x, y = self._next_window(i, seq_len, normalise)
+            x, y = self._next_window(i, seq_len, normalise, train_flag=True)
             data_x.append(x)
             data_y.append(y)
         return np.array(data_x), np.array(data_y)
 
-    def generate_train_batch(self, seq_len, batch_size, normalise):
+    def _next_window(self, i, seq_len, normalise, train_flag=True):
         '''
-        使用生成器的方法产生训练数据 
-        Yield a generator of training data from filename on given list of cols split for train/test'''
-        i = 0
-        while i < (self.len_train - seq_len):
-            x_batch = []
-            y_batch = []
-            for b in range(batch_size):
-                if i >= (self.len_train - seq_len):
-                    # stop-condition for a smaller final batch if data doesn't divide evenly
-                    yield np.array(x_batch), np.array(y_batch)
-                    i = 0
-                x, y = self._next_window(i, seq_len, normalise)
-                x_batch.append(x)
-                y_batch.append(y)
-                i += 1
-            yield np.array(x_batch), np.array(y_batch)
-
-    def _next_window(self, i, seq_len, normalise):
-        '''Generates the next data window from the given index location i
-        生成训练窗口数据 x为前49个时间步的数据特征 y为最后一个时间步的第一维数据 这样的划分是否合理呢？？
+        生成训练窗口数据，flag用来标识训练集还是测试集
+        返回：单个窗口的x和y
         '''
-        window = self.data_train[i:i+seq_len]
-        y_window = self.y_train[i:i+seq_len]
+        if train_flag:
+            window = self.data_train[i:i+seq_len, :]
+            y_window = self.y_train[i:i+seq_len, :]
+        else:
+            window = self.data_test[i:i+seq_len, :]
+            y_window = self.y_test[i:i+seq_len, :]
         # 在时间窗口内进行标准化
-        window = self.normalise_windows(window, single_window=True)[0] if normalise else window
+        window = self.normalise_windows(window) if normalise else window
 
-        # 这里要注意返回的时间窗口的秩 x应该是一个50个时间步的505维向量 y应该是50个时间步的1维向量
+        # 这里要注意返回的时间窗口的秩 x应该是一个50个时间步的488维矩阵 y应该是50个时间步的1维矩阵
         x = window
         y = y_window[:, 0]
         return x, y
 
-    def normalise_windows(self, window_data, single_window=False):
-        '''Normalise window with a base value of zero
+    def normalise_windows(self, window_data):
+        '''
         对窗口内数据进行标准化 对每个特征在50个时间步内进行标准化
         '''
         normalised_data = pd.DataFrame(window_data)
-
-        window_data = [window_data.T] if single_window else window_data
-        for window in window_data:
-            scalar = StandardScaler()
-            scalar.fit(window)
-            normalised_window = scalar.transform(window)
-            normalised_data.append(normalised_window)
-        return np.array(normalised_data.T)
+        scalar = StandardScaler()
+        scalar.fit(normalised_data)
+        normalised_data = scalar.transform(normalised_data)
+        return normalised_data
 
 class Timer():
     # 定义一个计时器类 stop方法输出用时
@@ -200,10 +155,12 @@ class Model():
                 self.model.add(LSTM(neurons, input_shape=(input_timesteps, input_dim), return_sequences=return_seq))
             if layer['type'] == 'dropout':
                 self.model.add(Dropout(dropout_rate))
+            if layer['type'] == 'flatten':
+                self.model.add(Flatten())
 
         self.model.compile(loss=configs['model']['loss'], optimizer=configs['model']['optimizer'])
-        
-        # 模型使用了三层LSTM网络，每层100维，最后的LSTM Cell输出到全连接层。
+        self.model.summary()
+        # 模型使用了三层LSTM网络，最后的LSTM 将序列输出到全连接层。
         
         print('[Model] Model Compiled')
         timer.stop()
@@ -214,10 +171,10 @@ class Model():
         print('[Model] Training Started')
         print('[Model] %s epochs, %s batch size' % (epochs, batch_size))
         # 模型的参数保存下来
-        save_fname = os.path.join(save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%d%m%Y-%H%M%S'), str(epochs)))
+        save_fname = os.path.join(save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%Y%m%d-%H%M%S'), str(epochs)))
         callbacks = [
             EarlyStopping(monitor='val_loss', patience=2),
-            # 使用earlystop防止过拟合 patience是可以忍耐多少个epoch，monitor所监控的变量没有提升
+            # 使用early stop防止过拟合 patience是可以忍耐多少个epoch，monitor所监控的变量没有提升
             ModelCheckpoint(filepath=save_fname, monitor='val_loss', save_best_only=True)
             # 监测验证集误差这个变量，当监测值有改进的时候才保存当前模型，不仅保存权重，也保存模型结构
         ]
@@ -229,89 +186,92 @@ class Model():
             callbacks=callbacks
         )
         self.model.save(save_fname)
-
         print('[Model] Training Completed. Model saved as %s' % save_fname)
         timer.stop()
-
-    def train_generator(self, data_gen, epochs, batch_size, steps_per_epoch, save_dir):
-        timer = Timer()
-        timer.start()
-        print('[Model] Training Started')
-        print('[Model] %s epochs, %s batch size, %s batches per epoch' % (epochs, batch_size, steps_per_epoch))
-        
-        save_fname = os.path.join(save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%Y%m%d-%H%M%S'), str(epochs)))
-        callbacks = [
-            ModelCheckpoint(filepath=save_fname, monitor='loss', save_best_only=True)
-        ]
-        self.model.fit_generator(
-            data_gen,
-            steps_per_epoch=steps_per_epoch,
-            epochs=epochs,
-            callbacks=callbacks,
-            workers=1
-        )
-        
-        print('[Model] Training Completed. Model saved as %s' % save_fname)
-        timer.stop()
-
-    def predict_point_by_point(self, data):
-        # Predict each timestep given the last sequence of true data, in effect only predicting 1 step ahead each time
-        '''
-        这个逐个点预测的方式很好的拟合了股价 但是带有一定的欺骗性 因为每一次预测点仅仅是next day，即使出现误差，在下一个预测中，数据时间窗口因滑动也会忽略掉
-        上一次预测的误差结果，这样的话，网络只需要保证预测值不会特别的偏离上一个点即可。这样不是网络拟合的最终目的，我们希望通过股价的多种特征，来预测长时间的
-        走势。
-        '''
-        print('[Model] Predicting Point-by-Point...')
-        predicted = self.model.predict(data)
-        predicted = np.reshape(predicted, (predicted.size,))
-        return predicted
 
     def predict_sequences_multiple(self, data, window_size, prediction_len):
-        #Predict sequence of 50 steps before shifting prediction run forward by 50 steps
+        #预测50个时间步的股价 这个预测跟训练的时间步吻合 并且有一定的实际应用价值
         print('[Model] Predicting Sequences Multiple...')
         prediction_seqs = []
-        for i in range(int(len(data)/prediction_len)):
-            curr_frame = data[i*prediction_len]
-            predicted = []
-            for j in range(prediction_len):
-                predicted.append(self.model.predict(curr_frame[newaxis,:,:])[0,0])
-                curr_frame = curr_frame[1:]
-                curr_frame = np.insert(curr_frame, [window_size-2], predicted[-1], axis=0)
+        for i in range(int(len(data))):
+            curr_slice = data[i, :, :]
+            prediction_seqs.append(self.model.predict(curr_slice[newaxis,:,:]))
+        prediction = np.array(prediction_seqs).reshape(prediction_len * len(prediction_seqs))
+        return prediction
+
+    def predict_sequence_overlap(self, data, window_size):
+        # 使用重叠的时间窗口预测股价，并在重叠处使用平均值削弱噪声的影响
+        print('[Model] Predicting Sequences Average...')
+        # 记录预测结果
+        prediction_seqs = []
+
+        for i in range(int(len(data))):
+            curr_slice = data[i, :, :]
+            predicted = self.model.predict(curr_slice[newaxis,:,:])
             prediction_seqs.append(predicted)
-        return prediction_seqs
+        prediction_seqs = np.array(prediction_seqs).reshape(int(len(data)), window_size)
+        prediction_matrix = np.zeros([int(len(data)), int(len(data))+window_size-1]) 
+        for i in range(int(len(data))):
+            prediction_matrix[i, i:i+window_size] = prediction_seqs[i, :]
+        # 对矩阵按列相加
+        prediction = prediction_matrix.sum(axis=0)
+        for i in range(int(len(prediction))):
+            if i >= window_size and i <= len(prediction)-window_size:
+                prediction[i] = prediction[i]/window_size
+            elif i < window_size:
+                prediction[i] = prediction[i]/(i+1)
+            elif i > len(prediction)-window_size:
+                prediction[i] = prediction[i]/(len(prediction)-i)
+        return prediction
 
-    def predict_sequence_full(self, data, window_size):
-        #Shift the window by 1 new prediction each time, re-run predictions on new window
-        print('[Model] Predicting Sequences Full...')
-        curr_frame = data[0]
-        predicted = []
-        for i in range(len(data)):
-            predicted.append(self.model.predict(curr_frame[newaxis,:,:])[0,0])
-            curr_frame = curr_frame[1:]
-            curr_frame = np.insert(curr_frame, [window_size-2], predicted[-1], axis=0)
-        return predicted
 
-def plot_results(predicted_data, true_data):
+
+        
+
+            
+
+def plot_results(predicted_data, true_data, prediction_len):
+    plot_predicted = predicted_data
+    plot_true = true_data
+
     fig = plt.figure(facecolor='white')
     ax = fig.add_subplot(111)
-    ax.plot(true_data, label='True Data')
-    plt.plot(predicted_data, label='Prediction')
+    ax.plot(plot_true, label='True Data')
+    plt.plot(plot_predicted, label='Prediction')
     plt.legend()
     plt.show()
 
-def plot_results_multiple(predicted_data, true_data, prediction_len):
-    fig = plt.figure(facecolor='white')
-    ax = fig.add_subplot(111)
-    ax.plot(true_data, label='True Data')
-    # Pad the list of predictions to shift it in the graph to it's correct start
-    for i, data in enumerate(predicted_data):
-        padding = [None for p in range(i * prediction_len)]
-        plt.plot(padding + data, label='Prediction')
-        plt.legend()
-    plt.show()
-
-
 def get_data_statistics(data, fill_inf=False):# 获取数据的统计信息 默认不对无穷数进行处理
+
+    indicators = { # 所有的数据指标名称与对应指标类型
+        'daily':'日线行情',
+        'daily_indicator':'每日指标',
+        'moneyflow': '个股资金流向',
+        'res_qfq':'前复权行情',
+        'res_hfq': '后复权行情',
+        'income': '利润表',
+        'balancesheet': '资产负债表',
+        'cashflow': '现金流量表',
+        'forecast': '业绩预告',
+        'express': '业绩快报',
+        'dividend': '分红送股',
+        'financeindicator': '财务指标',
+        'HSGTflow': '沪深港通资金流向',
+        'margin': '融资融券交易汇总',
+        'pledge': '股权质押统计',
+        'repurchase': '股票回购',
+        'desterilization': '限售股解禁',
+        'block': '大宗交易',
+        'shibor': '上海银行间同业拆放利率',
+        'shiborquote': '上海银行间同业拆放利率报价汇总',
+        'shiborLPR': '贷款基础利率',
+        'libor': '伦敦同业拆借利率',
+        'hibor': '香港银行同行业拆借利率',
+        'wen': '温州民间融资综合利率指数',
+        'tech': '技术分析',
+        'fft': '傅里叶变换',
+    } 
+
     print('1.数据集共有{}个样本，{}个特征。'.format(data.shape[0], data.shape[1]))
 
     print('2.数据集基本信息：')
@@ -372,66 +332,83 @@ def get_data_statistics(data, fill_inf=False):# 获取数据的统计信息 默�
     print('数据集中无无穷数。')
     return data
 
+def read_data(file_name):# 通过文件路径读取文件 并处理数据中的空值和无意义的列
+    # 读取已经进行过特征工程的数据
+    data_csv = pd.read_csv(file_name)
+    data = data_csv.drop(columns=['Unnamed: 0', 'Unnamed: 0.1', ])
+    # 将交易日期设置为索引 便于分析和画图
+    cal_date = pd.to_datetime(data['cal_date'], format='%Y%m%d').to_list()
+    data = pd.DataFrame(data={col:data[col].tolist() for col in data.columns}, index=cal_date)
+    # 获取包含有指定名称的列名索引
+    cols = list(data.columns.astype(str))
+    td_col = [col for col in cols if col.endswith('trade_date') or col.endswith('ann_date') or col.endswith('cal_date') or col.endswith('end_date')]
+    # 删除指定列
+    data = data.drop(columns=list(td_col))
+    # 对nan数据填0
+    data = data.fillna(0)
+
+    return data
+
+def parse_args(): # 处理参数
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--loadfile", default="", help="input the path of the saved model.")
+    parser.add_argument("--predict_mode", default="multi", help="input the mode of the prediction? multi/avg")
+    args = parser.parse_args()
+    return args
 
 def main():
+    args = parse_args()
     configs = json.load(open('bin\models\lstm_config.json', 'r', encoding='utf-8'))
     if not os.path.exists(configs['model']['save_dir']): os.makedirs(configs['model']['save_dir'])
 
     # 为了充分利用特征集的所有特征，不再仅仅使用收盘价和成交量
     file_name = 'dataset\\Feature_engineering_20190624_083438.csv'
-    data_csv = pd.read_csv(file_name)
-    data_csv = get_data_statistics(data_csv, fill_inf=True)
+    data_csv = read_data(file_name)
+    data = get_data_statistics(data_csv, fill_inf=True)
     features = np.array(data.columns).astype(str).tolist()
-    
+
+    # data 为训练数据的实例
     data = DataLoader(
-        configs['data']['filename'],
+        data,
         configs['data']['train_test_split'],
         features
     )
 
-    model = Model()
-    model.build_model(configs)
-    x, y = data.get_train_data(
-        seq_len=configs['data']['sequence_length'],
-        normalise=configs['data']['normalise']
-    )
-
-    
-    # in-memory training
-    model.train(
-        x,
-        y,
-        epochs = configs['training']['epochs'],
-        batch_size = configs['training']['batch_size'],
-        save_dir = configs['model']['save_dir']
-    )
-
-    '''
-    # out-of memory generative training
-    steps_per_epoch = math.ceil((data.len_train - configs['data']['sequence_length']) / configs['training']['batch_size'])
-    model.train_generator(
-        data_gen=data.generate_train_batch(
+    # 参数中是否加载已经训练好的模型
+    if args.loadfile == "":
+        model = Model()
+        model.build_model(configs)
+        x, y = data.get_train_data(
             seq_len=configs['data']['sequence_length'],
-            batch_size=configs['training']['batch_size'],
             normalise=configs['data']['normalise']
-        ),
-        epochs=configs['training']['epochs'],
-        batch_size=configs['training']['batch_size'],
-        steps_per_epoch=steps_per_epoch,
-        save_dir=configs['model']['save_dir']
-    )
-    '''
+        )
+        # 在内存中进行训练
+        model.train(
+            x,
+            y,
+            epochs = configs['training']['epochs'],
+            batch_size = configs['training']['batch_size'],
+            save_dir = configs['model']['save_dir']
+        )
+    else:
+        model = Model()
+        model.load_model(args.loadfile)
+    
+    # 根据外部参数决定是否使用覆盖模型的测试数据
+    overlap = True if args.predict_mode == "avg" else False
+
     x_test, y_test = data.get_test_data(
         seq_len=configs['data']['sequence_length'],
-        normalise=configs['data']['normalise']
+        normalise=configs['data']['normalise'],
+        overlap=overlap
     )
 
-    predictions = model.predict_sequences_multiple(x_test, configs['data']['sequence_length'], configs['data']['sequence_length'])
-    plot_results_multiple(predictions, y_test, configs['data']['sequence_length'])
-
-#    predictions = model.predict_sequence_full(x_test, configs['data']['sequence_length'])
-#    predictions = model.predict_point_by_point(x_test)
-#    plot_results(predictions, y_test)
+    # 如果使用覆盖的测试方法，那么测试集会使用滑动窗口进行预测，并在同一个点处进行平均，以消除噪声的影响。
+    if overlap:
+        predictions = model.predict_sequence_overlap(x_test, configs['data']['sequence_length'])
+    else:
+        predictions = model.predict_sequences_multiple(x_test, configs['data']['sequence_length'], configs['data']['sequence_length'])
+    plot_results(predictions, data.y_test, configs['data']['sequence_length'])
 
 
 if __name__ == '__main__':

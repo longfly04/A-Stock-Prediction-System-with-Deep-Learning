@@ -10,7 +10,7 @@
 		"normalise": true
 	},
 	"training": {
-		"epochs": 10,
+		"epochs": 5,
 		"batch_size": 32
 	},
 	"model": {
@@ -23,7 +23,7 @@
 				"type": "lstm",
 				"neurons": 256,
 				"input_timesteps": 50,
-				"input_dim": 505,
+				"input_dim": 488,
 				"return_seq": true,
 				"_comment":"LSTM层，输入是2维的49个时间步的序列数据，神经维度为100，输出整个序列"
 			},
@@ -36,12 +36,12 @@
 				"type": "lstm",
 				"neurons": 256,
 				"return_seq": true,
-				"_comment":"LSTM层，输入是上一个LSTM cell的输出 100维的49个时间步的序列数据，神经维度为100，输出整个序列"
+				"_comment":"LSTM层，输入是上一个LSTM cell的输出 100维的50个时间步的序列数据，神经维度为100，输出整个序列"
 			},
 			{
 				"type": "lstm",
 				"neurons": 100,
-				"return_seq": false,
+				"return_seq": true,
 				"_comment":"LSTM层，输入是上一个LSTM cell的输出 100维的49个时间步的序列数据，神经维度为100，只输出最后一个结果"
 			},
 			{
@@ -49,8 +49,11 @@
 				"rate": 0.2
 			},
 			{
+				"type": "flatten"
+			},
+			{
 				"type": "dense",
-				"neurons": 1,
+				"neurons": 50,
 				"activation": "linear",
 				"_comment":"Dence层，输入是上一个LSTM cell的输出 100维的1个时间步，输出神经维度为1，是最后的标签数据"
 			}

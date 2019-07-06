@@ -9,7 +9,8 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args":["--loadfile", "saved_models\\20190706-103910-e5.h5", "--predict_mode", "avg"]
         }
     ]
 }
