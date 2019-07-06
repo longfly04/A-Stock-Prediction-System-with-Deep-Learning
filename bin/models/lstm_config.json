@@ -7,7 +7,8 @@
 		],
 		"sequence_length": 50,
 		"train_test_split": 0.9,
-		"normalise": true
+		"normalise": false,
+		"_comment":"标准化的方式 True代表窗口内标准化 FALSE代表全数据集标准化"
 	},
 	"training": {
 		"epochs": 5,

@@ -47,8 +47,10 @@ class DataLoader():
         self.len_train = len(self.data_train)
         self.len_test = len(self.data_test)
         self.len_train_windows = None
+        self.normalised_train = self.normalise_data(self.data_train)
+        self.normalised_test = self.normalise_data(self.data_test)
 
-    def get_test_data(self, seq_len, normalise, overlap=False):
+    def get_test_data(self, seq_len, window_norm=False, overlap=False):
         '''
         测试集：以序列长度（50个时间步）为间隔，测试模型预测序列的效果，与训练集使用同样的切片和标准化函数 overlap表示测试集是否是重叠模式
         输出：test_x的维度是（5，50，488） test_y维度是（5，50，1）
@@ -57,17 +59,17 @@ class DataLoader():
         test_y = []
         if overlap:
             for i in range(self.len_test - seq_len):
-                x, y = self._next_window(i, seq_len, normalise, train_flag=False)
+                x, y = self._next_window(i, seq_len, window_norm, train_flag=False)
                 test_x.append(x)
                 test_y.append(y)
         else:
             for i in range(int(self.len_test/seq_len)):
-                x, y = self._next_window(i*seq_len, seq_len, normalise, train_flag=False)
+                x, y = self._next_window(i*seq_len, seq_len, window_norm, train_flag=False)
                 test_x.append(x)
                 test_y.append(y)
         return np.array(test_x), np.array(test_y)
 
-    def get_train_data(self, seq_len, normalise):
+    def get_train_data(self, seq_len, window_norm=False):
         '''
         训练集：以1个时间步为间隔，x和y都是相同长度的序列
         输出：data_x 维度（2364，50，488） ，data_y 维度（2364，50，1）
@@ -75,35 +77,35 @@ class DataLoader():
         data_x = []
         data_y = []
         for i in range(self.len_train - seq_len):
-            x, y = self._next_window(i, seq_len, normalise, train_flag=True)
+            x, y = self._next_window(i, seq_len, window_norm, train_flag=True)
             data_x.append(x)
             data_y.append(y)
         return np.array(data_x), np.array(data_y)
 
-    def _next_window(self, i, seq_len, normalise, train_flag=True):
+    def _next_window(self, i, seq_len, window_norm, train_flag=True):
         '''
         生成训练窗口数据，flag用来标识训练集还是测试集
         返回：单个窗口的x和y
         '''
         if train_flag:
-            window = self.data_train[i:i+seq_len, :]
+            window = self.data_train[i:i+seq_len, :] if window_norm else self.normalised_train[i:i+seq_len, :]
             y_window = self.y_train[i:i+seq_len, :]
         else:
-            window = self.data_test[i:i+seq_len, :]
+            window = self.data_test[i:i+seq_len, :] if window_norm else self.normalised_test[i:i+seq_len, :]
             y_window = self.y_test[i:i+seq_len, :]
         # 在时间窗口内进行标准化
-        window = self.normalise_windows(window) if normalise else window
+        window = self.normalise_data(window) if window_norm else window
 
         # 这里要注意返回的时间窗口的秩 x应该是一个50个时间步的488维矩阵 y应该是50个时间步的1维矩阵
         x = window
         y = y_window[:, 0]
         return x, y
 
-    def normalise_windows(self, window_data):
+    def normalise_data(self, data):
         '''
         对窗口内数据进行标准化 对每个特征在50个时间步内进行标准化
         '''
-        normalised_data = pd.DataFrame(window_data)
+        normalised_data = pd.DataFrame(data)
         scalar = StandardScaler()
         scalar.fit(normalised_data)
         normalised_data = scalar.transform(normalised_data)
@@ -197,6 +199,7 @@ class Model():
             curr_slice = data[i, :, :]
             prediction_seqs.append(self.model.predict(curr_slice[newaxis,:,:]))
         prediction = np.array(prediction_seqs).reshape(prediction_len * len(prediction_seqs))
+        prediction = rectify_predict(prediction, window_size=window_size)
         return prediction
 
     def predict_sequence_overlap(self, data, window_size):
@@ -224,11 +227,16 @@ class Model():
                 prediction[i] = prediction[i]/(len(prediction)-i)
         return prediction
 
-
-
-        
-
-            
+def rectify_predict(prediction, window_size):
+    # 对窗口预测的股价进行修正 防止突破涨跌停板限制
+    for i in range(int(len(prediction))-1):
+        if prediction[i+1] > prediction[i] * 1.1 :
+            # 如果预测结果突破了涨停板限制 将后面一个窗口的数据同时赋值 相当于在这个窗口衔接处经历了一个涨停板
+            prediction[i+1:i+window_size] = prediction[i+1:i+window_size] - (prediction[i+1] - prediction[i] * 1.1)
+        elif prediction[i+1] < prediction[i] * 0.9 :
+            # 如果预测结果突破了跌停板限制 将后面一个窗口的数据同时赋值 相当于在这个窗口衔接处经历了一个跌停板
+            prediction[i+1:i+window_size] = prediction[i+1:i+window_size] + (prediction[i] * 0.9 - prediction[i+1])
+    return prediction
 
 def plot_results(predicted_data, true_data, prediction_len):
     plot_predicted = predicted_data
@@ -380,7 +388,7 @@ def main():
         model.build_model(configs)
         x, y = data.get_train_data(
             seq_len=configs['data']['sequence_length'],
-            normalise=configs['data']['normalise']
+            window_norm=configs['data']['normalise']
         )
         # 在内存中进行训练
         model.train(
@@ -399,7 +407,7 @@ def main():
 
     x_test, y_test = data.get_test_data(
         seq_len=configs['data']['sequence_length'],
-        normalise=configs['data']['normalise'],
+        window_norm=configs['data']['normalise'],
         overlap=overlap
     )
 
