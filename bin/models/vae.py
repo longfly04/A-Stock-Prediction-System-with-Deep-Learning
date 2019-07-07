@@ -33,7 +33,6 @@ indicators = { # 所有的数据指标名称与对应指标类型
     'fft': '傅里叶变换',
 }    
 
-
 def pca(data):# 降维 
     import sklearn.preprocessing as pp
     from sklearn.decomposition import PCA
@@ -48,7 +47,6 @@ def pca(data):# 降维
     # 最大最小归一化 所有值都缩放到（0，1）
     minmax_scalar = pp.MinMaxScaler()
     data_minmax = minmax_scalar.fit_transform(data)
-
     # PCA类 用MLE算法根据特征的方差分布情况自己去选择一定数量的主成分特征来降维
     pca = PCA(n_components=200)
     data_pca = pca.fit_transform(data_std)
@@ -58,12 +56,10 @@ def pca(data):# 降维
 def vae(X_data, y): #通过VAE提取分布信息
     # 对时间序列数据使用自编码器 没有充分的挖掘时间序列的特性 模型极容易发散
     from scipy.stats import norm
-
     from keras.layers import Input, Dense, Lambda
     from keras.models import Model
     from keras import backend as K
     from keras.datasets import mnist
-
     from keras.utils import np_utils
     import keras
 
@@ -74,7 +70,6 @@ def vae(X_data, y): #通过VAE提取分布信息
     epochs = 50
 
     X = pd.DataFrame(X_data)
-    
     train_samples = int(X.shape[0] * 0.90)
     X_train = X.iloc[:train_samples]
     X_test = X.iloc[train_samples:]

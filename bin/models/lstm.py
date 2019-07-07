@@ -214,10 +214,12 @@ class Model():
             prediction_seqs.append(predicted)
         prediction_seqs = np.array(prediction_seqs).reshape(int(len(data)), window_size)
         prediction_matrix = np.zeros([int(len(data)), int(len(data))+window_size-1]) 
+        # 将窗口数据按照实际的时间起始点平移赋值给0矩阵，下一步进行按列求和取平均
         for i in range(int(len(data))):
             prediction_matrix[i, i:i+window_size] = prediction_seqs[i, :]
         # 对矩阵按列相加
         prediction = prediction_matrix.sum(axis=0)
+        # 取平均值 前window_size和后window_size个数据的分母是变化的 中间都是除以window_size
         for i in range(int(len(prediction))):
             if i >= window_size and i <= len(prediction)-window_size:
                 prediction[i] = prediction[i]/window_size
@@ -357,7 +359,7 @@ def read_data(file_name):# 通过文件路径读取文件 并处理数据中的�
 
     return data
 
-def parse_args(): # 处理参数
+def parse_args(): # 处理参数 分别是加载已经保存好的模型的路径 以及预测值的模式：滑动窗口还是多窗口
     parser = argparse.ArgumentParser()
     parser.add_argument("--loadfile", default="", help="input the path of the saved model.")
     parser.add_argument("--predict_mode", default="multi", help="input the mode of the prediction? multi/avg")
@@ -366,9 +368,8 @@ def parse_args(): # 处理参数
 
 def main():
     args = parse_args()
-    configs = json.load(open('bin\models\lstm_config.json', 'r', encoding='utf-8'))
+    configs = json.load(open('bin\\models\\lstm_config.json', 'r', encoding='utf-8'))
     if not os.path.exists(configs['model']['save_dir']): os.makedirs(configs['model']['save_dir'])
-
     # 为了充分利用特征集的所有特征，不再仅仅使用收盘价和成交量
     file_name = 'dataset\\Feature_engineering_20190624_083438.csv'
     data_csv = read_data(file_name)
@@ -388,7 +389,7 @@ def main():
         model.build_model(configs)
         x, y = data.get_train_data(
             seq_len=configs['data']['sequence_length'],
-            window_norm=configs['data']['normalise']
+            window_norm=configs['data']['normalise_mode']
         )
         # 在内存中进行训练
         model.train(
@@ -402,12 +403,12 @@ def main():
         model = Model()
         model.load_model(args.loadfile)
     
-    # 根据外部参数决定是否使用覆盖模型的测试数据
+    # 根据外部参数决定是否使用滑动窗口的测试数据
     overlap = True if args.predict_mode == "avg" else False
 
     x_test, y_test = data.get_test_data(
         seq_len=configs['data']['sequence_length'],
-        window_norm=configs['data']['normalise'],
+        window_norm=configs['data']['normalise_mode'],
         overlap=overlap
     )
 
