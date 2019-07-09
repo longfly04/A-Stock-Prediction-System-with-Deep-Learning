@@ -71,9 +71,11 @@ def vae(X_data, y): #通过VAE提取分布信息
 
     X = pd.DataFrame(X_data)
     train_samples = int(X.shape[0] * 0.90)
+    # 训练集，但是标签数据没有进入模型
     X_train = X.iloc[:train_samples]
-    X_test = X.iloc[train_samples:]
     y_train = y.iloc[:train_samples]
+    # 验证集，是验证还是测试呢？
+    X_test = X.iloc[train_samples:]
     y_test = y.iloc[train_samples:]
 
     #LossHistory类，保存loss和acc 并且plot
@@ -114,15 +116,17 @@ def vae(X_data, y): #通过VAE提取分布信息
             plt.legend(loc="upper right")
             plt.show()
 
-    # 构建模型输入
+    # 构建模型输入，时间序列数据应该从二维展平成一维，或者通过其他方式将时序体现出来
     x = Input(shape=(original_dim,))
+    # 输入的隐层，由于是时间序列，考虑应该替换成堆叠的LSTM，并尝试捕获全局信息
+    # TODO
     h = Dense(intermediate_dim, activation='relu')(x)
 
-    # 算p(Z|X)的均值和方差
+    # 算p(Z|X)的均值和方差，
     z_mean = Dense(latent_dim)(h)
     z_log_var = Dense(latent_dim)(h)
 
-    # 重参数技巧
+    # 重参数
     def sampling(args):
         z_mean, z_log_var = args
         epsilon = K.random_normal(shape=K.shape(z_mean))
