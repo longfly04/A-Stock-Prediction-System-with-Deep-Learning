@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args":["--loadfile", "saved_models\\20190706-203633-e5.h5"]
+            "args":[]
         }
     ]
 }
