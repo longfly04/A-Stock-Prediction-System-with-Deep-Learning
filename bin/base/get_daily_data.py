@@ -19,14 +19,11 @@ sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-Sy
 import tushare as ts
 import pandas as pd 
 import numpy as np 
-from bin.stock import *
-
+from bin.base.stock import *
 
 STARTDATE = 20080101
 ENDDATE = 20181231
 TSCODE = '600690.SH'
-
-
 
 def getParameter(ts_code=None):
     # 切割起始时间，按年获取数据，再进行拼接

@@ -115,7 +115,7 @@ class Parameters(Stock, Trade, Company):
                         exchange=exchange,
                         date=date)
         self.year=year
-        with open('bin\\token.tkn','r') as token:
+        with open('bin\\base\\token.tkn','r') as token:
             mytoken = token.readline().rstrip('\n')
             # print('Your token is ' + mytoken)
         ts.set_token(mytoken)
@@ -1822,3 +1822,74 @@ class News(Stock, Trade):
         end_date=self.end_date,
         year=year)
         return data
+
+
+class General_API(Parameters):
+    '''
+    通用接口类：
+        目前整合了股票（未复权、前复权、后复权）、指数、数字货币、ETF基金、期货、期权的行情数据，
+        未来还将整合包括外汇在内的所有交易行情数据，同时提供分钟数据。
+        由于这个通用接口直接在接口这一层返回数据，不需要在api传递到下一层
+        所以这个类将直接返回数据
+    输入参数：
+
+        名称	类型	必选	描述
+        ts_code	str	Y	证券代码
+        api	str	N	pro版api对象，如果初始化了set_token，此参数可以不需要
+        start_date	str	N	开始日期 (格式：YYYYMMDD)
+        end_date	str	N	结束日期 (格式：YYYYMMDD)
+        asset	str	Y	资产类别：E股票 I沪深指数 C数字货币 FT期货 FD基金 O期权，默认E
+        adj	str	N	复权类型(只针对股票)：None未复权 qfq前复权 hfq后复权 , 默认None
+        freq	str	Y	数据频度 ：支持分钟(min)/日(D)/周(W)/月(M)K线，其中1min表示1分钟（类推1/5/15/30/60分钟） ，默认D。
+        ma	list	N	均线，支持任意合理int数值
+        factors	list	N	股票因子（asset='E'有效）支持 tor换手率 vr量比
+        adjfactor	str	N	复权因子，在复权数据是，如果此参数为True，返回的数据中则带复权因子，默认为False。
+
+    输出指标
+
+        具体输出的数据指标可参考各行情具体指标。
+
+    '''
+    def __init__(self, 
+                asset='E', 
+                adj=None,
+                adjfactor=False,
+                factors=['tor', 'vr'], 
+                freq='1min', 
+                ma=[7, 21],
+                ts_code=None, 
+                start_date=None, 
+                end_date=None, 
+                    ):
+        '''
+        初始化：
+            资产类型为股票，数据频率为1分钟，股票因子返回换手率和量比，
+        '''
+
+
+        with open('bin\\base\\token.tkn','r') as token:
+            mytoken = token.readline().rstrip('\n')
+            # print('Your token is ' + mytoken)
+        ts.set_token(mytoken)
+        self.asset = asset
+        self.adj = adj
+        self.adjfactor = adjfactor
+        self.factors = factors
+        self.freq = freq
+        self.ma = ma
+        self.ts_code = ts_code
+        self.start_date = start_date
+        self.end_date = end_date
+        
+    def getMinuteStock(self):
+        pro_data = ts.pro_bar(ts_code=self.ts_code, 
+                                start_date=self.start_date, 
+                                end_date=self.end_date,
+                                asset=self.asset,
+                                factors=self.factors,
+                                adj=self.adj,
+                                adjfactor=self.adjfactor,
+                                freq=self.freq,
+                                ma=self.ma,
+                                )
+        return pro_data

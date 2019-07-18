@@ -14,7 +14,7 @@ sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-Sy
 import tushare as ts
 import pandas as pd 
 import numpy as np 
-from bin.stock import *
+from bin.base.stock import *
 
 para = Parameters()
 stk_data = StockData(para)

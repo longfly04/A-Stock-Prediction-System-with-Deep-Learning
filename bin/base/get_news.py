@@ -12,13 +12,11 @@ sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-Sy
 
 import tushare as ts
 import pandas as pd 
-from bin.stock import *
+from bin.base.stock import *
 
 STARTDATE = 20080101
 ENDDATE = 20181231
 TSCODE = '600196.SH'
-
-
 
 def getParameter(ts_code=None, start=None, end=None, by_year=False):
     # 获取每天的新闻 由于流量限制 所以参数需要切割成按日获取
