@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore")
 import os
 import sys
 sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
-from bin.stock import *
+from bin.base.stock import *
 
 import json
 '''

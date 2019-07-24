@@ -88,7 +88,7 @@ def getCompanyPublic(paralist, save=False):
         total = total.append(pub)
     print('Get {0} company public data at {1} dimentions and {2} rows.'.format(TSCODE, total.shape[1], total.shape[0])) 
     if save:
-        total.to_csv('dataset\\Company Public-' + paralist[0].start_date + '-to-' + paralist[-1].start_date + '.csv') 
+        total.to_csv('dataset\\Company Public-' + paralist[0].start_date[:10] + '-to-' + paralist[-1].start_date[:10] + '.csv') 
     return total
 
 def getCCTVNews(paralist, save=False, sleep=0):
@@ -112,7 +112,7 @@ def getCCTVNews(paralist, save=False, sleep=0):
         time.sleep(sleep)
     print('Get {0} CCTV news data at {1} dimentions and {2} rows.'.format(TSCODE, total.shape[1], total.shape[0])) 
     if save:
-        total.to_csv('dataset\\CCTV News-' + paralist[0].start_date + '-to-' + paralist[-1].start_date + '.csv') 
+        total.to_csv('dataset\\CCTV News-' + paralist[0].start_date[:10] + '-to-' + paralist[-1].start_date[:10] + '.csv') 
     return total
 
 def getNews(paralist, save=False, sleep=0):
@@ -136,7 +136,7 @@ def getNews(paralist, save=False, sleep=0):
         time.sleep(sleep)
     print('Get {0} news data at {1} dimentions and {2} rows.'.format(TSCODE, total.shape[1], total.shape[0])) 
     if save:
-        total.to_csv('dataset\\News-' + paralist[0].start_date + '-to-' + paralist[-1].start_date + '.csv') 
+        total.to_csv('dataset\\News-' + paralist[0].start_date[:10] + '-to-' + paralist[-1].start_date[:10] + '.csv') 
     return total
 
 def getMinutesStock(ts_code=None, 
@@ -146,12 +146,15 @@ def getMinutesStock(ts_code=None,
                             adj=None,
                             adjfactor=False,
                             factors=['tor', 'vr'], 
-                            ma=[7, 21],):
+                            ma=[7, 21],
+                            sleep=15,
+                            save=False):
     '''
     概述：
         将Parameter按照时间切割，通过API接口获取数据后再拼接数据，返回一个parameters的列表；
         受API限制，每次只能返回7000行数据，考虑到每天数据量为4个小时，240分钟，每个月数据量为5000-6000行，
         所以把时间按月拆分，但是由于是短期交易，所以并不需要太长的历史数据
+        每分钟的限制是5次
     参数：
         ts_code：股票代码
         freq：交易频率：1min 5min 15min 30min 60min
@@ -161,6 +164,7 @@ def getMinutesStock(ts_code=None,
         adjfactor：复权因子，在复权数据是，如果此参数为True，返回的数据中则带复权因子，默认为False。
         factors：股票因子（asset='E'有效）支持 tor换手率 vr量比
         ma:均线，支持任意合理int数值
+        sleep:每次请求数据之间的延迟，单位秒
     返回：
         DataFrame类型数据
     '''
@@ -181,18 +185,22 @@ def getMinutesStock(ts_code=None,
                             freq=freq, 
                             ma=ma,
                             ).getMinuteStock()
+        time.sleep(sleep)
         try:
             data = data.sort_values(by='trade_time', ascending=True).reset_index(drop=True)
             datalist.append(data)
         except Exception as e:
             print('Get minutes stock failed.\n', e)
-    return pd.DataFrame(datalist)
+    data = pd.DataFrame(datalist)
+    if save:
+        data.to_csv('dataset\\MinutesStock-' + TSCODE + '-' + str(span) +' months from ' + str(now.date()) + ' .csv')
+    return data
 
 def main():
-    data = getMinutesStock(ts_code=TSCODE, span=3)
+    data = getMinutesStock(ts_code=TSCODE, span=6, save=True)
     print(data)
     paralist = getParameter(ts_code=TSCODE, start=STARTDATE, end=ENDDATE)
-    data = getNews(paralist, sleep=2)
+    data = getNews(paralist, sleep=2, save=True)
     print(data)
 
 if __name__ == '__main__':
