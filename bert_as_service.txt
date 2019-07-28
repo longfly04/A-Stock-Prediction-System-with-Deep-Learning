@@ -1,0 +1,12 @@
+Terminal
+
+启动服务：
+bert-serving-start -model_dir /tmp/english_L-12_H-768_A-12/ -num_worker=4 
+
+帮助：
+bert-serving-start --help
+bert-serving-terminate --help
+bert-serving-benchmark --help
+
+终止服务：
+bert-serving-terminate -port 5555
