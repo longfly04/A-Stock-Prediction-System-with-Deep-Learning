@@ -171,7 +171,7 @@ def getMinutesStock(ts_code=None,
     now = arrow.now()
     print("The current time is %s %s." %(str(now.date()), str(now.time())))
     # 将时间字符串化
-    datalist = []
+    datalist = pd.DataFrame()
     for i in range(span):
         trade_date_start = str(now.shift(months=-(i+1)).date())
         trade_date_end = str(now.shift(months=-i).date())
@@ -187,19 +187,26 @@ def getMinutesStock(ts_code=None,
                             ).getMinuteStock()
         time.sleep(sleep)
         try:
-            data = data.sort_values(by='trade_time', ascending=True).reset_index(drop=True)
-            datalist.append(data)
+            datalist = pd.concat([datalist, data], axis=0, ignore_index=True)
         except Exception as e:
             print('Get minutes stock failed.\n', e)
-    data = pd.DataFrame(datalist)
     if save:
-        data.to_csv('dataset\\MinutesStock-' + TSCODE + '-' + str(span) +' months from ' + str(now.date()) + ' .csv')
-    return data
+        datalist = datalist.sort_values(by='trade_time', ascending=True).reset_index(drop=True)
+        datalist.to_csv('dataset\\MinutesStock-' + TSCODE + '-' + str(span) +' months from ' + str(now.date()) + ' .csv')
+    return datalist
 
 def main():
-    data = getMinutesStock(ts_code=TSCODE, span=6, save=True)
-    print(data)
-    paralist = getParameter(ts_code=TSCODE, start=STARTDATE, end=ENDDATE)
+    # 从当前时间向前推6个月的数据
+    period_months = 6
+    # 获取分钟股价数据
+    # data = getMinutesStock(ts_code=TSCODE, span=period_months, save=True)
+    # print(data)
+
+    # 获取分钟新闻数据
+    now = arrow.now()
+    end_date = str(now.date())
+    start_date = str(now.shift(months=-period_months).date())
+    paralist = getParameter(ts_code=TSCODE, start=start_date, end=end_date, by='day')
     data = getNews(paralist, sleep=2, save=True)
     print(data)
 
