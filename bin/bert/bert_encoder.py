@@ -92,8 +92,8 @@ def encode_minutes(data,
                 print(e)
                 os.system('bert-serving-terminate -port 5555')
                 time.sleep(16)
-            if save:
-                data.to_csv(save_filename) # 每次循环都保存一次，便于下一次循环从上次中断的时候开始
+            if save and i%32 == 0 or i == int(len(data)/text_len)-1:# 为了减少读写次数 每32次请求保存一次数据
+                data.to_csv(save_filename) 
         elif bs.is_ready: # 遇到已经编码的行
             print("[encoder] Row %d to row %d is already encoded." %(i*text_len, (i+1)*text_len-1))
         else: # 服务已经停止
