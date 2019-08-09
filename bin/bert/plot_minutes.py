@@ -186,15 +186,15 @@ def plot_window_minutes(data):
 	plt.show()
 
 
-def main(steps=[]):
+def main(modes=[]):
 	'''
-	step1:
+	mode 1:
 		对新闻编码进行可视化
-	step2：
+	mode 2
 		对分钟股价进行可视化
 	'''
-	for step in steps:
-		if step==1:
+	for mode in modes:
+		if mode==1:
 			# step 1
 			code_filename = 'dataset\\News_with_code-2019-07-28-to-2019-01-30.csv'
 			data_csv = pd.read_csv(code_filename, nrows=8000).drop(columns=['content']) # 去掉content列 减少内存占用
@@ -210,13 +210,13 @@ def main(steps=[]):
 			plt.rcParams['font.sans-serif'] = ['SimHei']# 用来正常显示中文标签
 			plt.rcParams['axes.unicode_minus'] = False# 用来正常显示负号
 			plot_news_vector(data, tag)
-		if step==2:
+		if mode==2:
 			# step 2
 			stock_filename = 'dataset\\MinutesStock-600690.SH-6 months from 2019-07-29 .csv'
 			data_csv = pd.read_csv(stock_filename, nrows=6000, usecols=['trade_time','open','close','high','low','vol'])
 			data = data_csv.set_index(pd.to_datetime(data_csv['trade_time'])).drop(columns=[x for x in data_csv.columns if x.startswith('Unnamed: ')])
-			window_data = window_minutes(data, by='day')
+			# window_data = window_minutes(data, by='day')
 			plot_window_minutes(data)
 
 if __name__ == '__main__':
-	main(steps=[2,])
+	main(modes=[1,])
