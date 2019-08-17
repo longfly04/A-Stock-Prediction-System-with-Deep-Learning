@@ -1,0 +1,50 @@
+{
+	"data": {
+		"x_filename": "dataset\\News_with_code-2019-07-28-to-2019-01-30.csv",
+		"x_columns":[],
+		"x_index":"datetime",
+		"x_feature_dim":768,
+		"x_fill_blank":"normal",
+
+		"y_filename": "dataset\\MinutesStock-600690.SH-6 months from 2019-07-29 .csv",
+		"y_columns": ["trade_time", "open", "high", "low", "close", "vol"],
+		"y_index":"trade_time",
+		"y_predict_cols":["close"],
+
+		"train_test_split": 0.85,
+		"sequence_length": 60,
+		"predict_window": 0.1,
+		"normalise": "",
+		"window_slice_freq": "day"
+	},
+	"training": {
+		"epochs": 2,
+		"batch_size": 32,
+		"steps_per_epoch": 16,
+		"save_dir":"saved_models"
+	},
+	"model": {
+		"loss": "mse",
+		"optimizer": "rmsprop",
+		"hyperparameters": 
+			{
+				"output_dim":5, 
+				"output_length":15, 
+				"batch_input_shape":null,
+				"input_shape":null, 
+				"batch_size":32, 
+				"input_dim":768, 
+				"input_length":60,
+				"hidden_dim":512, 
+				"depth":3, 
+				"broadcast_state":"True", 
+				"unroll":"False",
+				"stateful":"False", 
+				"inner_broadcast_state":"True", 
+				"teacher_force":"False",
+				"peek":"True", 
+				"dropout":0.1
+			}
+			
+	}
+}
