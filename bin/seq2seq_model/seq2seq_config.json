@@ -28,21 +28,21 @@
 		"optimizer": "rmsprop",
 		"hyperparameters": 
 			{
-				"output_dim":5, 
+				"output_dim":1, 
 				"output_length":15, 
 				"batch_input_shape":null,
 				"input_shape":null, 
 				"batch_size":32, 
 				"input_dim":768, 
 				"input_length":60,
-				"hidden_dim":512, 
-				"depth":3, 
-				"broadcast_state":"True", 
-				"unroll":"False",
-				"stateful":"False", 
-				"inner_broadcast_state":"True", 
-				"teacher_force":"False",
-				"peek":"True", 
+				"hidden_dim":768, 
+				"depth":2, 
+				"broadcast_state":true, 
+				"unroll":false,
+				"stateful":false, 
+				"inner_broadcast_state":true, 
+				"teacher_force":false,
+				"peek":true, 
 				"dropout":0.1
 			}
 			

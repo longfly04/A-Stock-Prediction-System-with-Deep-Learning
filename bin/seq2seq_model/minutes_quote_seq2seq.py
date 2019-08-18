@@ -353,8 +353,9 @@ class DataLoader():
                 self.index_limit[1].hour,
                 self.index_limit[1].minute)
 
-    def merge_index(self):
-        pass
+    def make_index(self):
+        index_range = pd.date_range(self.index_limit[0], self.index_limit[1], freq='Min')
+        
 
     def get_iterator_x_data(self, nrows=3000):
         # 使用迭代器获取数据x
@@ -541,14 +542,14 @@ def main():
     config = json.load(open('bin\\seq2seq_model\\seq2seq_config.json', 'r', encoding='utf-8'))
 
     dataloader = DataLoader(config=config, nrows=1000)
-#    [x_data, y_data, y_tag] = dataloader.generate_x_y_data()
+    [x_data, y_data, y_tag] = dataloader.generate_x_y_data()
 
     seq2seq_model = Seq2Seq_Model(config)
     seq2seq_model.build_model()
 
-    print(dataloader.x_data.head(5))
-    print(dataloader.y_data.head(5))
-    print(dataloader.y_tag.head(5))
+    print(x_data.head(5))
+    print(y_data.head(5))
+    print(y_tag.head(5))
 
 if __name__ == '__main__':
     main()
