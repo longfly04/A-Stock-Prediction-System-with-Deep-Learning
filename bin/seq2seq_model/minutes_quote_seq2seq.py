@@ -27,26 +27,26 @@ seq2seq models：
         数据集为六个月的分钟交易数据，每日的股价标签为240行。
         特征集为六个月的财经新闻，并经过bert编码之后，平均每日500-700条新闻，时间不连续。
 '''
-import numpy as np 
-import pandas as pd 
-import sys
-import os
-import time
 import datetime as dt
-from matplotlib import pyplot as plt 
 import json
+import os
+import sys
+import time
 
-import seq2seq
-import recurrentshop
-from recurrentshop.cells import *
-from keras.layers import Lambda, Activation
-from keras.layers import add, multiply, concatenate
+import numpy as np
+import pandas as pd
 from keras import backend as K
-from recurrentshop import LSTMCell, RecurrentSequential
-from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, TimeDistributed, Bidirectional, Input
 from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers import (Activation, Bidirectional, Dense, Dropout, Input,
+                          Lambda, TimeDistributed, add, concatenate, multiply)
+from keras.models import Model, Sequential
+from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
+
+import recurrentshop
+import seq2seq
+from recurrentshop import LSTMCell, RecurrentSequential
+from recurrentshop.cells import *
 
 sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
 
@@ -354,8 +354,20 @@ class DataLoader():
                 self.index_limit[1].minute)
 
     def make_index(self):
+        '''
+        处理x和y的索引，由于x数据集比较大（>1GB），而股价数据集y相对较小（<10MB），所以我们首先读入y数据集，获取y的索引，
+        并按照交易日切片，股价有效数据的时间段为(9:30-11:30 13:00-15:00)。
+        xi作为财经新闻，应该影响其新闻发生之后的股价走势（即投资者获取消息，然后做出投资决策这个前提条件），
+        所以，以y索引为主索引，t交易日的y数据为240分钟股价，而t交易日的x数据为t-1日15:00之后到t日15:00时之前的24小时
+        数据。形成一个1440分钟数据压缩到240分钟股价的映射。
+        其中，影响比较直接的是正在交易的240分钟新闻数据，休盘期的信息主要影响下一个开盘时刻的股价。
+        '''
+        from pandas.tseries.offsets import *
+
+        offset = DateOffset(days=-1)
+        x_date_range = self.index_limit[0]
         index_range = pd.date_range(self.index_limit[0], self.index_limit[1], freq='Min')
-        
+
 
     def get_iterator_x_data(self, nrows=3000):
         # 使用迭代器获取数据x
