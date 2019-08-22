@@ -40,6 +40,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers import (Activation, Bidirectional, Dense, Dropout, Input,
                           Lambda, TimeDistributed, add, concatenate, multiply)
 from keras.models import Model, Sequential
+from keras.preprocessing.sequence import TimeseriesGenerator
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
@@ -211,14 +212,19 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
     '''
 
     if isinstance(depth, int):
-        depth = (depth, depth)
+        depth = (depth, depth) 
+        # depth是整数时，相当于编码器和解码器都有相同的层数
     if batch_input_shape:
-        shape = batch_input_shape
+        shape = batch_input_shape 
+        # 批输入的shape作为模型输入的shape
     elif input_shape:
-        shape = (batch_size,) + input_shape
+        shape = (batch_size,) + input_shape 
+        # 不指定batch input shape，则用批大小拼接input shape，如batch size为32，input为768，拼接后就是（32，768）
+        # input shape 必须是一个元组
     elif input_dim:
         if input_length:
             shape = (batch_size,) + (input_length,) + (input_dim,)
+            # 一般情况下通用的shape（批大小，输入序列长度，输入维度）
         else:
             shape = (batch_size,) + (None,) + (input_dim,)
     else:
@@ -226,15 +232,29 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
         raise TypeError
     if hidden_dim is None:
         hidden_dim = output_dim
+        # 隐藏层的维度如果也是None？那代表什么呢
 
     encoder = RecurrentSequential(readout=True, state_sync=inner_broadcast_state,
                                   unroll=unroll, stateful=stateful,
                                   return_states=broadcast_state)
+    '''
+    参数：
+        readout：是否额外将输出进行处理 选项有add（True），multiply，average，maximum等
+        state_sync：状态是否在内部传播，源码中对initial_states的处理不一样，对每个cell的state都进行传播到下一个batch
+        stateful：keras特性，在不同的batch之间传递cells的状态，而不是仅仅在cell之间传递状态，即stateful
+                  在stateful = True 时，我们要在fit中手动使得shuffle = False。随后，在X[i]（表示输入矩阵中第
+                  i个sample）这个小序列训练完之后，Keras会将将训练完的记忆参数传递给X[i+bs]（表示第i+bs个sample）,
+                  作为其初始的记忆参数。
+        unroll：keras特性，将LSTM网络展开，也就是原本的时序序列直接展开成多个cell拼接，可以加快速度，但是占用更多内存
+    '''
     for _ in range(depth[0]):
         encoder.add(LSTMCell(hidden_dim, batch_input_shape=(shape[0], hidden_dim)))
         encoder.add(Dropout(dropout))
+    # 根据depth[0]指定编码器深度
 
     dense1 = TimeDistributed(Dense(hidden_dim))
+    # 使用TimeDistributed层对1个batch中样本（input_length，input_dim）每个向量都进行Dense操作，在整个length长度下，这个样本
+    # 都共享TimeDistributed层的权重，即输出后变成（batch_size，input_length，hidden_dim）
     dense1.supports_masking = True
     dense2 = Dense(output_dim)
 
@@ -242,16 +262,27 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
                                   state_sync=inner_broadcast_state, decode=True,
                                   output_length=output_length, unroll=unroll,
                                   stateful=stateful, teacher_force=teacher_force)
+    '''
+    参数：
+        teaching force ：它每次不使用上一个state的输出作为下一个state的输入，而是直接
+        使用训练数据的标准答案(ground truth)的对应上一项作为下一个state的输入。
+        结合beam search和计划抽样，使用一个概率p来决定使用teaching还是free training，随着训练epoch增加，
+        概率p也会减少，相当于逐步的减小teaching的采样频率，确保模型既能快速学习，又有泛化能力
+    '''
 
     for _ in range(depth[1]):
         decoder.add(Dropout(dropout, batch_input_shape=(shape[0], output_dim)))
         decoder.add(LSTMDecoderCell(output_dim=output_dim, hidden_dim=hidden_dim,
                                     batch_input_shape=(shape[0], output_dim)))
+    # 根据depth[1]指定解码器的深度
 
     _input = Input(batch_shape=shape)
     _input._keras_history[0].supports_masking = True
     encoded_seq = dense1(_input)
+    # 对输入数据先通过TimeDistributed层，处理成hidden_dim的向量维度
     encoded_seq = encoder(encoded_seq)
+    # 再通过encoder编码
+    # 以下是一些选项的处理，是否广播状态，是否teaching模式等
     if broadcast_state:
         assert type(encoded_seq) is list
         states = encoded_seq[-2:]
@@ -264,13 +295,16 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
         truth_tensor = Input(batch_shape=(shape[0], output_length, output_dim))
         truth_tensor._keras_history[0].supports_masking = True
         inputs += [truth_tensor]
+    # 编码之后的后续处理
 
-
+    # 解码，initial_state是否接受从编码器传递过来的状态，
     decoded_seq = decoder(encoded_seq,
                           ground_truth=inputs[1] if teacher_force else None,
                           initial_readout=encoded_seq, initial_state=states)
     
     model = Model(inputs, decoded_seq)
+    # 整个模型就是从输入到解码seq，可以将编码器单独拿出来，使用其中的编码
+    # 另外，模型
     model.encoder = encoder
     model.decoder = decoder
     return model
@@ -383,6 +417,7 @@ class DataLoader():
         except Exception as e:
             print(e)
 
+
     def split_train_test_data(self, data):
         # 训练集和测试集切分
         i_split = int(len(data) * self.data_config['train_test_split'])
@@ -395,6 +430,7 @@ class DataLoader():
         self.len_train = len(self.data_train)
         self.len_test = len(self.data_test)
         '''
+
 
     def normalise_data(self, data=None):
         '''
@@ -409,6 +445,7 @@ class DataLoader():
         normalised_data = scalar.transform(normalised_data)
         return normalised_data
 
+
     def generate_x_y_data(self):
         '''
         生成x y y标签数据
@@ -416,6 +453,10 @@ class DataLoader():
             y是股价，对应于股价的变化，即delta(yt) = y(t) - y(t-1)
             y_tag是一个时间段的标签，用一个7元组表示，代码头部已经给出定义
         '''
+        # x_y_ts_gen = TimeseriesGenerator()
+        # 此处需要使用时间序列生成器，以配合使用fit generator ——自己写也行
+        
+
         if self.data_config['window_slice_freq'] == 'day':
             daily_index = self.y_data.index.to_period('D').unique()
             # 用股价数据的索引来生成数据
@@ -504,7 +545,7 @@ class Seq2Seq_Model():
         print('[Model] Model Compiled')
         timer.stop()
 
-    def train(self, x, y, epochs, batch_size, save_dir):
+    def train(self, x, y, epochs, batch_size, validation_split, save_dir):
         timer = Timer()
         timer.start()
         print('[Model] Training Started')
@@ -520,7 +561,8 @@ class Seq2Seq_Model():
             y,
             epochs=epochs,
             batch_size=batch_size,
-            callbacks=callbacks
+            callbacks=callbacks,
+            validation_split=validation_split
         )
         self.model.save(save_fname)
 

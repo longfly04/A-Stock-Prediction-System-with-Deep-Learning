@@ -18,9 +18,10 @@
 		"window_slice_freq": "day"
 	},
 	"training": {
-		"epochs": 2,
+		"epochs": 5,
 		"batch_size": 32,
 		"steps_per_epoch": 16,
+		"validation_split":0.9,
 		"save_dir":"saved_models"
 	},
 	"model": {
@@ -29,17 +30,17 @@
 		"hyperparameters": 
 			{
 				"output_dim":1, 
-				"output_length":15, 
+				"output_length":60, 
 				"batch_input_shape":null,
 				"input_shape":null, 
 				"batch_size":32, 
 				"input_dim":768, 
 				"input_length":60,
-				"hidden_dim":768, 
+				"hidden_dim":1024, 
 				"depth":2, 
 				"broadcast_state":true, 
 				"unroll":false,
-				"stateful":false, 
+				"stateful":true, 
 				"inner_broadcast_state":true, 
 				"teacher_force":false,
 				"peek":true, 
