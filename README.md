@@ -582,53 +582,53 @@ CR计算公式中的中间价其实也是一个指标，它是通过对昨日（
 分析股价数据特征，主要对开盘价、收盘价、最高价、最低价、涨跌幅、成交额、换手率、量比、市盈率、市净率、市销率、流通股本、总股本、小、中、大、特大单买入卖出额等特征进行分析，并且对以上特征应用了指数移动平均、差分自相关等数据处理手段。
 
 * 股价、成交量特征
-<center><img src='project\feature_engineering\30_price_amount.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\30_price_amount.png' width=1060></img></center>
 
 
 * MACD 异步移动均线
-<center><img src='project\feature_engineering\31_MACD.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\31_MACD.png' width=1060></img></center>
 
 
 * 布林线和随机指标KDJ
-<center><img src='project\feature_engineering\32_boll_kdj.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\32_boll_kdj.png' width=1060></img></center>
 
 
 * 开盘价和相关强弱指数RSI
-<center><img src='project\feature_engineering\33_open_rsi.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\33_open_rsi.png' width=1060></img></center>
 
 
 * 威廉指标WR和中间意愿指标CR
-<center><img src='project\feature_engineering\34_cr_ma.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\34_cr_ma.png' width=1060></img></center>
 
 
 * 短线超买超卖指标CCI、成交量变异率VR和波动幅度TR
-<center><img src='project\feature_engineering\35_cci_tr_vr.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\35_cci_tr_vr.png' width=1060></img></center>
 
 
 * 动向指标DMI
-<center><img src='project\feature_engineering\36_close_DMI.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\36_close_DMI.png' width=1060></img></center>
 
 
 * 傅里叶变换和逆变换
-<center><img src='project\feature_engineering\40_Fourier_transforms.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\40_Fourier_transforms.png' width=1060></img></center>
 
 * 股价频谱分析
 
-<center><img src='project\feature_engineering\41_Fourier_components.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\41_Fourier_components.png' width=1060></img></center>
 
 
 * 收盘价逐日相关性 price correlation
-<center><img src='project\feature_engineering\50_Close_price_correlations.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\50_Close_price_correlations.png' width=1060></img></center>
 
 
 ## 4.4. 特征重要性分析
 
 
 * 特征重要性分析 xgboost回归
-<center><img src='project\feature_engineering\61_Feature_importance.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\61_Feature_importance.png' width=1060></img></center>
 
 * 特征重要性误差分析
-<center><img src='project\feature_engineering\60_Training_Vs_Validation_Error.png' width=1060></img></center>
+<center><img src='project_results\feature_engineering\60_Training_Vs_Validation_Error.png' width=1060></img></center>
 
 
 我们可以看到，在去除强相关性的特征后，验证集的误差随着训练次数的迭代有所增加，表明模型出现了过拟合。
@@ -712,15 +712,15 @@ LSTM模型对于时间序列数据的训练来说，具备先天的优势。在�
 
 模型的预测结果如下：
 
-<center><img src='project\lstm\lstm_prediction_point_by_point.png' width=1060></img></center>
+<center><img src='project_results\lstm\lstm_prediction_point_by_point.png' width=1060></img></center>
 
 上图是对股价逐个点进行预测，虽然看上去与实际价格吻合的很好，但是这个结果具有一定的欺骗性，因为模型只需要预测一个点，那么，在下一次预测中，这个预测点实际上就被真实数据取代了，那么模型只需要给出实际误差不是很大的结果就可以莫混过关。
 
-<center><img src='project\lstm\lstm_prediction_full_window.png' width=1060></img></center>
+<center><img src='project_results\lstm\lstm_prediction_full_window.png' width=1060></img></center>
 
 上图是对整个测试序列进行预测，这个结果明显看出，模型并没有学到什么，对于股价波动没有丝毫的敏感性。
 
-<center><img src='project\lstm\lstm_prediction_multiple.png' width=1060></img></center>
+<center><img src='project_results\lstm\lstm_prediction_multiple.png' width=1060></img></center>
 
 上图是以序列为单位进行预测，可以看出虽然在序列的开始节点是比较准确的，但是模型依然对波动不敏感，而且每个序列的第一个点的预测结果跟上面逐个点预测的原因是一样的，再继续使用模型预测波动趋势就会发现模型并没有对股价的涨跌做出反应，这说明模型学习的效果并不理想。
 
@@ -736,7 +736,7 @@ LSTM模型对于时间序列数据的训练来说，具备先天的优势。在�
 
 综上，我修改了原项目中的模型结构和数据结构，主要是增加了新的网络层，并对数据维度进行了扩展，我使用了2008年到2018年十年的股价日收盘价数据进行训练，模型参数总量为169万，预测结果有了很大的提升。
 
-<center><img src='project\lstm\predict_seq_to_seq.png' width=1060></img></center>
+<center><img src='project_results\lstm\predict_seq_to_seq.png' width=1060></img></center>
 
 我们可以看到，虽然在股价的绝对值上，预测结果有较大的偏差，但是股价的走势以及每日走势细节。尤其是对股价的剧烈波动都基本能够准确捕捉，可以说模型已经基本学习到了股价波动的趋势。
 
@@ -750,7 +750,7 @@ LSTM模型对于时间序列数据的训练来说，具备先天的优势。在�
 
 然后，得到的结果，有那么一点萌 （—.—）
 
-<center><img src='project\lstm\predict_seq_to_seq_avg.png' width=1060></img></center>
+<center><img src='project_results\lstm\predict_seq_to_seq_avg.png' width=1060></img></center>
 
 看来时间窗口平滑真的很平滑。
 
@@ -760,15 +760,15 @@ LSTM模型对于时间序列数据的训练来说，具备先天的优势。在�
 
 之前对于训练数据和测试数据，都是在时间窗口内进行的标准化。标准化会对数据的进行重新分布，将数据集的均值和方差都设为标准正态分布。那么问题来了，训练集和测试集实际上每个样本数据都是基于不同的均值和方差的，但是标准化之后它们就具有相同的均值和方差。这样会损失一些信息。如果我们在训练之前，将整个训练集和测试集统一进行一次标准化，使得整体的均值方差保持一致，这样，基于时间的均值和方差序列信息就会更好的保留，并且可能会在一定程度上提高预测的精确度。以上，感觉表述不清，我们用实验来验证一下。
 
-<center><img src='project\lstm\predict_seq_to_seq_general_normed.png' width=1060></img></center>
+<center><img src='project_results\lstm\predict_seq_to_seq_general_normed.png' width=1060></img></center>
 
 上图是全局标准化之后的结果，我们可以看到，在绝对值上面，相对于窗口标准化的预测结果，股价更加接近于真实数据。在这里我发现应该是窗口预测的原因，两个窗口衔接的位置容易出现比较大的误差。这在实际当中是不可能出现的。于是我又有了一个对窗口衔接处做修正的方案：
 
-<center><img src='project\lstm\predict_seq_to_seq_general_normed_rectified.png' width=1060></img></center>
+<center><img src='project_results\lstm\predict_seq_to_seq_general_normed_rectified.png' width=1060></img></center>
 
 上图对窗口的衔接处做了处理，如果前一个窗口的最后一个数据和下一个窗口的第一个数据之间的偏差超过了涨跌停板的限制时，我们人为的将后面一个窗口的数据都修正到涨跌停板的范围内，这样，既不会影响在窗口内模型预测的结果，也使得结果数据更加自然、真实。
 
-<center><img src='project\lstm\predict_seq_to_seq_avg_general_normed.png' width=1060></img></center>
+<center><img src='project_results\lstm\predict_seq_to_seq_avg_general_normed.png' width=1060></img></center>
 
 上面是全局标准化之后的滑动平均之后的结果，发现也是可以捕获基本的趋势，但是在股价绝对值上面，差别较大。
 
@@ -836,7 +836,7 @@ LSTM模型对于时间序列数据的训练来说，具备先天的优势。在�
 训练情况还可以，训练误差和验证误差都可控，最后由于val_loss升高而earlystop了，但是最后的预测结果出现了很大问题。
 上图。
 
-<center><img src='project\lstm\modified_lstm_100_0.9_0.1_predict_global_normed_rectified.png' width=1060></img></center>
+<center><img src='project_results\lstm\modified_lstm_100_0.9_0.1_predict_global_normed_rectified.png' width=1060></img></center>
 
 我们可以看到，股价预测结果在一开始还基本捕捉到了走势，但是随着时间的增加，后面的预测结果出现很大的偏差。基本可以说，时间序列预测任务，模型的参数是在不断变化的。里面提到的概念漂移问题在这次实验中体现的很明显。
 参考这篇文章，https://zhuanlan.zhihu.com/p/54413813
@@ -861,7 +861,7 @@ LSTM模型对于时间序列数据的训练来说，具备先天的优势。在�
 
 结果呢？
 
-<center><img src='project\lstm\modified_lstm_50_0.9_0.1_predict_global_normed_rectified.png' width=1060></img></center>
+<center><img src='project_results\lstm\modified_lstm_50_0.9_0.1_predict_global_normed_rectified.png' width=1060></img></center>
 
 我们发现模型普遍在后面的预测结果上出现问题，而一开始的预测结果虽然绝对值偏差较大，但是趋势基本吻合。
 
@@ -888,11 +888,11 @@ names = ['宏观','行业','公司','数据','市场','观点','央行','其他'
 
 随机选取2个维度：
 
-<center><img src='project\bert\news_vectors_from_10_channels_2D_8000pts.png' width=1060></img></center>
+<center><img src='project_results\bert\news_vectors_from_10_channels_2D_8000pts.png' width=1060></img></center>
 
 对比多个维度：
 
-<center><img src='project\bert\news_vectors_from_10_channels_2by3_3000pts.png' width=1060></img></center>
+<center><img src='project_results\bert\news_vectors_from_10_channels_2by3_3000pts.png' width=1060></img></center>
 
 我们可以看出，仅仅通过2个维度很难区别不同标签的编码有明显不同，但是同一个标签下的新闻还是有一定的聚类特征，通过这个我们可以推测出，编码在高维空间中有可能会表现更好的区分特性。
 
@@ -904,19 +904,19 @@ names = ['宏观','行业','公司','数据','市场','观点','央行','其他'
 
 首先是用训练集/验证集为0.9的情况下对模型进行训练的结果：
 
-<center><img src='project\vae\train_val_loss_0.9.png' width=1060></img></center>
+<center><img src='project_results\vae\train_val_loss_0.9.png' width=1060></img></center>
 
-<center><img src='project\vae\encode_0.9.png' width=1060></img></center>
+<center><img src='project_results\vae\encode_0.9.png' width=1060></img></center>
 
 训练结果很糟糕，模型没有被训练出来，但是encode的前两个维度貌似有聚集的特征。
 
 然后用训练集/验证集为0.98的情况下对模型进行训练：
 
 
-<center><img src='project\vae\train_val_loss.png' width=1060></img></center>
+<center><img src='project_results\vae\train_val_loss.png' width=1060></img></center>
 
 
-<center><img src='project\vae\encode.png' width=1060></img></center>
+<center><img src='project_results\vae\encode.png' width=1060></img></center>
 
 验证loss出现很大的波动，而且训练误差为负数，编码反而更加随机。
 
@@ -933,6 +933,48 @@ names = ['宏观','行业','公司','数据','市场','观点','央行','其他'
 原版的VAE模型是用来处理图像的，主要是用来生成nmist数据集中的手写数字，在直接用于时间序列数据中时，出现很多问题。我想，我们需要修改原本的模型结构，使其能够处理时序数据。
 
 TODO
+## 使用seq2seq模型预测财经新闻对股价波动的影响
+
+seq2seq模型是一个比较经典的序列编解码模型，主要用在机器翻译、标题生成、主题归纳等场景，在NLP环境下，语言模型都是离散的向量组成，seq2seq模型捕捉离散向量之间的时序关系并进行编解码，实现对文本的生成。
+
+从另一个角度来看，encoder-decoder模型是有信息瓶颈的，也就是编码的维度，所以本身这个模型无法传递大量的文本信息，在长序列编码场景下，受限于编码的维度所携带的信息受香农定律所限，有可能出现模型的极限。
+
+股价波动本身是市场投资者投资意愿动力学的反应，股价本身具有高度的无自相关性，因果性很难把握和预测，但是大量投资者行为是有统计学规律的，而且主力操作和散户操作所适用的动力学模型是不同的。
+
+我们假设，短期的股市波动主要动因是投资者的投资意愿，投资意愿又来自于市场的风吹草动，财经新闻是一个很好的反应市场投资动向的因素，因为财经新闻涉及面很广，包含有大量有价值的投资信息，投资者可能会根据消息跟风进行投资。
+
+以下是财经新闻部分截取：
+
+>10:28新能源汽车股直线拉升，中通客车封涨停，亚星客车大涨7％，北汽蓝谷、泉峰汽车、华菱星马等多只个股走强。
+
+>10:23【工信部：将支持有条件的地方建立燃油汽车禁行区试点】工信部答复制定禁售燃油车时间表建议：将支持有条件的地方建立燃油汽车禁行区试点。
+
+>10:18【武汉集聚芯片企业突破百家】8月21日，湖北省庆祝新中国成立70周年系列新闻发布会第五场，主题为“武汉——产业之‘芯’、区域之‘心’、动能之‘新’”。会上披露，武汉已集聚芯片企业100余家，一个以芯片设计为引领、芯片制造为核心、封装测试与材料为配套的集成电路产业链正在形成。（湖北日报）
+
+>10:03【片仔癀中药饮片因“一般缺陷5项”被福建省药监局勒令整改日前，福建省食药监局公布的“2019年中药饮片质量集中整治(生产环节)专项检查及处理情况公示“显示，，漳州片仔癀药业股份有限公司、福建铭远制药有限公司等企业因生产的中药饮片存在缺陷而被勒令整改。
+
+>10:03OLED板块异动，领益智造大涨6%，长信科技涨5%，京东方A、香山股份、深天马A、晶瑞股份、国风塑业集体走强。
+
+>10:02啤酒板块拉升，珠江啤酒直线封板，燕京啤酒、兰州黄河、青岛啤酒、惠泉啤酒等纷纷走强。
+
+>09:57【基本医疗卫生与健康促进法草案：医疗卫生机构不得对外出租、承包医疗科室】 基本医疗卫生与健康促进法草案明确举办医疗机构应当具备的条件，规定医疗卫生机构不得对外出租、承包医疗科室，非营利性医疗卫生机构不得向出资人分配收益，禁止伪造、变造、买卖、出租、出借医疗机构执业许可证。同时，草案加大对上述违法行为的处罚。（央广）
+
+我们可以看到，财经新闻包含各个投资板块的消息，而且还有对股市波动的描述，虽然是总结性、报道性的新闻，但给投资者以积极或者消极的信号，也是能够反映一部分投资者投资意向的。
+
+我们想通过财经新闻，反映出股市波动，看新闻中有没有可以影响股市波动的因素。
+
+我们将使用seq2seq模型对股价进行建模。首先我们要对财经新闻进行处理，我们使用了bert预训练模型对变长的新闻文本序列编码成一个768维向量，因为新闻发生具有不确定性，所以我们使用一些噪声数据填充新闻序列，之前的可视化结果可以发现bert编码出来之后的结果在空间中具有高斯噪声的特性，所以我们也使用近似的噪声数据填充。
+
+然后我们要划分不同时段的编码样本，由于每天的开盘时间一共只有4个小时，这4个小时内的新闻流是很有参考价值的，我们假设它与实时的股价波动有关联关系，休盘的20个小时，从财经新闻的角度看，也包含一些有价值的信息，但是这时候没有直接的交易，我们假设休盘期的新闻会影响投资者心理，并且最终影响在下一个开盘日的开盘价上，也就是一个昨收盘和今开盘的差别。如果这样的话，我们的模型需要处理两种不同的样本：
+
+1.休盘期新闻编码序列样本和昨收今开的差；
+
+2.开盘期新闻编码序列和股价波动序列。
+
+这样的编解码器需要进行微调，我们以seq2seq编解码器为核心，在解码器段增加额外的网络层以将序列输出转化为标量，并反映在标签信息上。训练时，我们需要划分样本进行训练，对于休盘期新闻，通过间隔等参数，用生成器生成序列和标签，训练m个batch后，再使用
+开盘期新闻训练序列标签，这两个训练过程是共享整个编码器和解码器的权重的，这样可使模型尽可能的发现新闻中影响投资者行文的消息。
+
+
 
 
 ## 使用GAN网络生成股价预测数据

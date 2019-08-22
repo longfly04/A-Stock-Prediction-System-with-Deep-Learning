@@ -253,10 +253,17 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
     # 根据depth[0]指定编码器深度
 
     dense1 = TimeDistributed(Dense(hidden_dim))
+    '''
+    # dence1：
     # 使用TimeDistributed层对1个batch中样本（input_length，input_dim）每个向量都进行Dense操作，在整个length长度下，这个样本
     # 都共享TimeDistributed层的权重，即输出后变成（batch_size，input_length，hidden_dim）
+    '''
     dense1.supports_masking = True
     dense2 = Dense(output_dim)
+    '''
+    dence2:
+        处理从encoder之后的编码，整型为output_dim，再送给decoder
+    '''
 
     decoder = RecurrentSequential(readout='add' if peek else 'readout_only',
                                   state_sync=inner_broadcast_state, decode=True,
@@ -302,12 +309,19 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
                           ground_truth=inputs[1] if teacher_force else None,
                           initial_readout=encoded_seq, initial_state=states)
     
-    model = Model(inputs, decoded_seq)
+    seq2seq_model = Model(inputs, decoded_seq)
     # 整个模型就是从输入到解码seq，可以将编码器单独拿出来，使用其中的编码
-    # 另外，模型
-    model.encoder = encoder
-    model.decoder = decoder
-    return model
+    # 另外，模型处理的实时新闻序列到股价波动序列，如果要将休盘期内新闻信息也纳入训练，
+    # 则需要共享编码器和解码权重，并增加新的Flatten和Dence层，将解码器输出序列视为波动编码，再进入Dence输出标量
+    # 涉及到，在RecurrentSequential后增加Sequencial序列
+    seq2seq_model.encoder = encoder
+    seq2seq_model.decoder = decoder
+
+    decoded_vec = Flatten(decoded_seq)
+    decoded_vec = Dense(1, activation='tanh')
+    seq2vec_model = Model(inputs, decoded_vec)
+
+    return seq2seq_model, seq2vec_model
 
 
 class Timer():
@@ -453,9 +467,6 @@ class DataLoader():
             y是股价，对应于股价的变化，即delta(yt) = y(t) - y(t-1)
             y_tag是一个时间段的标签，用一个7元组表示，代码头部已经给出定义
         '''
-        # x_y_ts_gen = TimeseriesGenerator()
-        # 此处需要使用时间序列生成器，以配合使用fit generator ——自己写也行
-        
 
         if self.data_config['window_slice_freq'] == 'day':
             daily_index = self.y_data.index.to_period('D').unique()
