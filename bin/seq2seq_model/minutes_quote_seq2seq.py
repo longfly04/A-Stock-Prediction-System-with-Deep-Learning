@@ -48,109 +48,9 @@ import recurrentshop
 import seq2seq
 from recurrentshop import LSTMCell, RecurrentSequential
 from recurrentshop.cells import *
+from .cells import LSTMDecoderCell, AttentionDecoderCell
 
 sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
-
-
-class LSTMDecoderCell(ExtendedRNNCell):
-
-    def __init__(self, hidden_dim=None, **kwargs):
-        if hidden_dim:
-            self.hidden_dim = hidden_dim
-        else:
-            self.hidden_dim = self.output_dim
-        super(LSTMDecoderCell, self).__init__(**kwargs)
-
-    def build_model(self, input_shape):
-        hidden_dim = self.hidden_dim
-        output_dim = self.output_dim
-
-        x = Input(batch_shape=input_shape)
-        h_tm1 = Input(batch_shape=(input_shape[0], hidden_dim))
-        c_tm1 = Input(batch_shape=(input_shape[0], hidden_dim))
-
-        W1 = Dense(hidden_dim * 4,
-                   kernel_initializer=self.kernel_initializer,
-                   kernel_regularizer=self.kernel_regularizer,
-                   use_bias=False)
-        W2 = Dense(output_dim,
-                   kernel_initializer=self.kernel_initializer,
-                   kernel_regularizer=self.kernel_regularizer,)
-        U = Dense(hidden_dim * 4,
-                  kernel_initializer=self.kernel_initializer,
-                  kernel_regularizer=self.kernel_regularizer,)
-
-        z = add([W1(x), U(h_tm1)])
-
-        z0, z1, z2, z3 = get_slices(z, 4)
-        i = Activation(self.recurrent_activation)(z0)
-        f = Activation(self.recurrent_activation)(z1)
-        c = add([multiply([f, c_tm1]), multiply([i, Activation(self.activation)(z2)])])
-        o = Activation(self.recurrent_activation)(z3)
-        h = multiply([o, Activation(self.activation)(c)])
-        y = Activation(self.activation)(W2(h))
-
-        return Model([x, h_tm1, c_tm1], [y, h, c])
-
-
-class AttentionDecoderCell(ExtendedRNNCell):
-
-    def __init__(self, hidden_dim=None, **kwargs):
-        if hidden_dim:
-            self.hidden_dim = hidden_dim
-        else:
-            self.hidden_dim = self.output_dim
-        self.input_ndim = 3
-        super(AttentionDecoderCell, self).__init__(**kwargs)
-
-
-    def build_model(self, input_shape):
-        
-        input_dim = input_shape[-1]
-        output_dim = self.output_dim
-        input_length = input_shape[1]
-        hidden_dim = self.hidden_dim
-
-        x = Input(batch_shape=input_shape)
-        h_tm1 = Input(batch_shape=(input_shape[0], hidden_dim))
-        c_tm1 = Input(batch_shape=(input_shape[0], hidden_dim))
-        
-        W1 = Dense(hidden_dim * 4,
-                   kernel_initializer=self.kernel_initializer,
-                   kernel_regularizer=self.kernel_regularizer)
-        W2 = Dense(output_dim,
-                   kernel_initializer=self.kernel_initializer,
-                   kernel_regularizer=self.kernel_regularizer)
-        W3 = Dense(1,
-                   kernel_initializer=self.kernel_initializer,
-                   kernel_regularizer=self.kernel_regularizer)
-        U = Dense(hidden_dim * 4,
-                  kernel_initializer=self.kernel_initializer,
-                  kernel_regularizer=self.kernel_regularizer)
-
-        C = Lambda(lambda x: K.repeat(x, input_length), output_shape=(input_length, input_dim))(c_tm1)
-        _xC = concatenate([x, C])
-        _xC = Lambda(lambda x: K.reshape(x, (-1, input_dim + hidden_dim)), output_shape=(input_dim + hidden_dim,))(_xC)
-
-        alpha = W3(_xC)
-        alpha = Lambda(lambda x: K.reshape(x, (-1, input_length)), output_shape=(input_length,))(alpha)
-        alpha = Activation('softmax')(alpha)
-
-        _x = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=(1, 1)), output_shape=(input_dim,))([alpha, x])
-
-        z = add([W1(_x), U(h_tm1)])
-
-        z0, z1, z2, z3 = get_slices(z, 4)
-
-        i = Activation(self.recurrent_activation)(z0)
-        f = Activation(self.recurrent_activation)(z1)
-
-        c = add([multiply([f, c_tm1]), multiply([i, Activation(self.activation)(z2)])])
-        o = Activation(self.recurrent_activation)(z3)
-        h = multiply([o, Activation(self.activation)(c)])
-        y = Activation(self.activation)(W2(h))
-
-        return Model([x, h_tm1, c_tm1], [y, h, c])
 
 
 def Seq2Seq(output_dim, output_length, batch_input_shape=None,
@@ -319,9 +219,10 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
 
     decoded_vec = Flatten(decoded_seq)
     decoded_vec = Dense(1, activation='tanh')
-    seq2vec_model = Model(inputs, decoded_vec)
+    seq2vec_model = Model(inputs, [decoded_seq, decoded_vec])
+    # 最终模型有1个输入，2个输出
 
-    return seq2seq_model, seq2vec_model
+    return seq2vec_model
 
 
 class Timer():
@@ -374,14 +275,16 @@ class DataLoader():
         '''
         # 配置文件分为三部分：数据、模型结构、训练
         self.data_config = config['data']
-        # 初始化时读入数据，时间序列作为索引，股价数据升序排列，全部读取，
+        # 初始化时读入股价数据，时间序列作为索引，股价数据升序排列，全部读取
         y_data_csv = pd.read_csv(
                                 self.data_config['y_filename'], 
                                 usecols=self.data_config['y_columns'])
         self.y_data = y_data_csv.set_index(
                         pd.to_datetime(y_data_csv[self.data_config['y_index']])).drop(
                             columns=[x for x in y_data_csv.columns if x.startswith('Unnamed: ')]).sort_index(ascending=True)
-        # 编码数据，使用时间序列作为索引，部分读入，防止内存溢出
+        
+        # 编码数据，使用时间序列作为索引，部分读入，防止内存溢出，此处注意，由于存储时是按照日期倒叙存储，所以时间序列是倒叙
+        # 先读入的日期是最近的日期，处理时要注意
         x_data_csv = pd.read_csv(self.data_config['x_filename'], nrows=nrows)
         self.x_data = x_data_csv.set_index(
             pd.to_datetime(x_data_csv[self.data_config['x_index']])).drop(
@@ -401,24 +304,50 @@ class DataLoader():
                 self.index_limit[1].hour,
                 self.index_limit[1].minute)
 
-    def make_index(self):
+    def split_open_close_data(self):
         '''
-        处理x和y的索引，由于x数据集比较大（>1GB），而股价数据集y相对较小（<10MB），所以我们首先读入y数据集，获取y的索引，
-        并按照交易日切片，股价有效数据的时间段为(9:30-11:30 13:00-15:00)。
-        xi作为财经新闻，应该影响其新闻发生之后的股价走势（即投资者获取消息，然后做出投资决策这个前提条件），
-        所以，以y索引为主索引，t交易日的y数据为240分钟股价，而t交易日的x数据为t-1日15:00之后到t日15:00时之前的24小时
-        数据。形成一个1440分钟数据压缩到240分钟股价的映射。
-        其中，影响比较直接的是正在交易的240分钟新闻数据，休盘期的信息主要影响下一个开盘时刻的股价。
-        '''
-        from pandas.tseries.offsets import *
+        分割开市、休市数据:
+            处理x和y的索引，由于x数据集比较大（>1GB），而股价数据集y相对较小（<10MB），
+            所以我们首先读入y数据集，获取y的索引，并按照交易日切片，
+            股价有效数据的时间段为(9:30-11:30 13:00-15:00)。
+            xi作为财经新闻，应该影响其新闻发生之后的股价走势（即投资者获取消息，然后做出投资决策这个前提条件），
+            所以，以y索引为主索引，t交易日的y数据为240分钟股价，
+            而t交易日的x数据为t-1日15:00之后到t日15:00时之前的24小时数据。
+            形成一个1440分钟数据压缩到240分钟股价的映射。
+            其中，影响比较直接的是正在交易的240分钟新闻数据，休盘期的信息主要影响下一个开盘时刻的股价。
 
-        offset = DateOffset(days=-1)
-        x_date_range = self.index_limit[0]
-        index_range = pd.date_range(self.index_limit[0], self.index_limit[1], freq='Min')
+        返回：
+            开市x,y，休市x,y
+        '''
+        import datetime as dt
+
+        open_time = dt.time(9,30)
+        close_time = dt.time(15,0)
+        moon_break_time = dt.time(11,30)
+        moon_open_time = dt.time(13,1)
+
+        x_open_market_index = [x for x in self.x_data.index 
+                                if (x.time() >= open_time and x.time() <= moon_break_time) 
+                                or (x.time() >= moon_open_time and x.time() <= close_time)
+                              ]
+        y_open_market_index = [x for x in self.y_data.index 
+                                if (x.time() >= open_time and x.time() <= moon_break_time) 
+                                or (x.time() >= moon_open_time and x.time() <= close_time)
+                              ]
+        x_close_market_index = [x for x in self.x_data.index if x not in x_open_market_index ]
+        y_close_market_index = [x for x in self.y_data.index if x not in y_open_market_index ]
+        # 这里埋了一个坑，开市包括分割点，但是休市么有分割点，也就是实际的开市交易数据是4*60+1=241分钟的，
+        # 不过这样会方便做差计算，因为delta(y) = y(t) - y(t-1)就会只有240分钟数据 。
+        y_fluctuation = self.y_data - self.y_data.shift(1)
+
+        return self.x_data[x_open_market_index], y_fluctuation[y_open_market_index], self.x_data[x_close_market_index], y_fluctuation[y_close_market_index]
 
 
     def get_iterator_x_data(self, nrows=3000):
-        # 使用迭代器获取数据x
+        '''
+        获取x迭代器：
+            使用迭代器获取数据x，避免内存溢出
+        '''
         x_data_csv_iter = pd.read_csv(self.data_config['x_filename'], iterator=True)
         # 每次获取nrows
         try:
@@ -460,41 +389,28 @@ class DataLoader():
         return normalised_data
 
 
-    def generate_x_y_data(self):
+    def generate_x_y_data(self, x_open, y_open, x_close, y_close):
         '''
-        生成x y y标签数据
+        生成x,y序列数据：
             x是编码数据，t日的编码应该是从t-1日15时休市之后起算
             y是股价，对应于股价的变化，即delta(yt) = y(t) - y(t-1)
             y_tag是一个时间段的标签，用一个7元组表示，代码头部已经给出定义
         '''
-
-        if self.data_config['window_slice_freq'] == 'day':
-            daily_index = self.y_data.index.to_period('D').unique()
-            # 用股价数据的索引来生成数据
-            for idx in daily_index:
-                daily_data_x = self.x_data[self.x_data.index.to_period('D') == idx]
-                daily_data_y = self.y_data[self.y_data.index.to_period('D') == idx]
-                y_open = daily_data_y['open'][0]
-                y_close = daily_data_y['close'][-1]
-                y_high = daily_data_y['high'].max()
-                y_low = daily_data_y['low'].min()
-                y_volume = daily_data_y['vol'].sum()
-                # 定义每日的标签：均值、涨跌幅度、震荡幅度
-                y_i = [daily_data_y['trade_time'][0], daily_data_y['trade_time'][-1], y_open, y_close, y_high, y_low, y_volume]
-                yield [daily_data_x, daily_data_y, y_i]
-
-        elif self.data_config['window_slice_freq'] == 'hour':
-            hour_index = self.y_data.index.to_period('H').unique()
-            for idx in hour_index:
-                hour_data_x = self.x_data[self.x_data.index.to_period('H') == idx]
-                hour_data_y = self.y_data[self.y_data.index.to_period('H') == idx]
-                y_open = hour_data_y['open'][0]
-                y_close = hour_data_y['close'][-1]
-                y_high = hour_data_y['high'].max()
-                y_low = hour_data_y['low'].min()
-                y_volume = hour_data_y['vol'].sum()
-                y_i = [hour_data_y['trade_time'][0], y_open, y_close, y_high, y_low, y_volume]
-                yield [hour_data_x, hour_data_y, y_i]
+        y_daily_index = self.y_data.index.to_period('D').unique()
+        if x_data[x_data.index==y_daily_index[0]]:
+            pass
+        # 用股价数据的索引来生成数据
+        for idx in daily_index:
+            daily_data_x = self.x_data[self.x_data.index.to_period('D') == idx]
+            daily_data_y = self.y_data[self.y_data.index.to_period('D') == idx]
+            y_open = daily_data_y['open'][0]
+            y_close = daily_data_y['close'][-1]
+            y_high = daily_data_y['high'].max()
+            y_low = daily_data_y['low'].min()
+            y_volume = daily_data_y['vol'].sum()
+            # 定义每日的标签：均值、涨跌幅度、震荡幅度
+            y_i = [daily_data_y['trade_time'][0], daily_data_y['trade_time'][-1], y_open, y_close, y_high, y_low, y_volume]
+            yield [daily_data_x, daily_data_y, y_i]
 
     def _fill_blank_x_data(self, dim=768, distribution="normal", distribution_args=[0, 1]):
         '''
@@ -607,7 +523,8 @@ def main():
     config = json.load(open('bin\\seq2seq_model\\seq2seq_config.json', 'r', encoding='utf-8'))
 
     dataloader = DataLoader(config=config, nrows=1000)
-    [x_data, y_data, y_tag] = dataloader.generate_x_y_data()
+    x_open, y_open, x_close, y_close = dataloader.split_open_close_data()
+    xy_data_generator = dataloader.generate_x_y_data(x_open, y_open, x_close, y_close)
 
     seq2seq_model = Seq2Seq_Model(config)
     seq2seq_model.build_model()

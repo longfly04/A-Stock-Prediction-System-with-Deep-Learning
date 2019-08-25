@@ -4,18 +4,22 @@
 		"x_columns":[],
 		"x_index":"datetime",
 		"x_feature_dim":768,
+		"x_feature_col":"code",
 		"x_fill_blank":"normal",
 
 		"y_filename": "dataset\\MinutesStock-600690.SH-6 months from 2019-07-29 .csv",
 		"y_columns": ["trade_time", "open", "high", "low", "close", "vol"],
 		"y_index":"trade_time",
-		"y_predict_cols":["close"],
+		"y_tag_cols":["close", "vol"],
 
 		"train_test_split": 0.85,
 		"sequence_length": 60,
-		"predict_window": 0.1,
-		"normalise": "",
-		"window_slice_freq": "day"
+		"predict_window": 0.5,
+		"open_market_seq_step": 1,
+		"close_market_seq_step": 6,
+		"open_market_tag_len":30,
+		"close_market_tag_len":1,
+		"normalise": ""
 	},
 	"training": {
 		"epochs": 5,
