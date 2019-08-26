@@ -1019,8 +1019,6 @@ TODO
 
 https://tushare.pro/register?reg=266868 
 
-# 9.感谢
 
-感谢支持。
 
 <left><img src='doc\weixin1.jpg' width=180></img></left>
