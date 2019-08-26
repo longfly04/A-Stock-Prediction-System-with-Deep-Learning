@@ -1,7 +1,7 @@
 {
 	"data": {
 		"x_filename": "dataset\\News_with_code-2019-07-28-to-2019-01-30.csv",
-		"x_columns":[],
+		"x_columns":["datetime","code","content"],
 		"x_index":"datetime",
 		"x_feature_dim":768,
 		"x_feature_col":"code",
@@ -17,7 +17,7 @@
 		"predict_window": 0.5,
 		"open_market_seq_step": 1,
 		"close_market_seq_step": 6,
-		"open_market_tag_len":30,
+		"open_market_tag_len":60,
 		"close_market_tag_len":1,
 		"normalise": ""
 	},

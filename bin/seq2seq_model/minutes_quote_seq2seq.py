@@ -33,6 +33,8 @@ import os
 import sys
 import time
 
+sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
+
 import numpy as np
 import pandas as pd
 from keras import backend as K
@@ -48,10 +50,7 @@ import recurrentshop
 import seq2seq
 from recurrentshop import LSTMCell, RecurrentSequential
 from recurrentshop.cells import *
-from .cells import LSTMDecoderCell, AttentionDecoderCell
-
-sys.path.append('C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
-
+from bin.seq2seq_model.cells import LSTMDecoderCell, AttentionDecoderCell
 
 def Seq2Seq(output_dim, output_length, batch_input_shape=None,
             input_shape=None, batch_size=None, input_dim=None, input_length=None,
@@ -276,19 +275,21 @@ class DataLoader():
         # 配置文件分为三部分：数据、模型结构、训练
         self.data_config = config['data']
         # 初始化时读入股价数据，时间序列作为索引，股价数据升序排列，全部读取
-        y_data_csv = pd.read_csv(
+        self.y_data_csv = pd.read_csv(
                                 self.data_config['y_filename'], 
                                 usecols=self.data_config['y_columns'])
-        self.y_data = y_data_csv.set_index(
-                        pd.to_datetime(y_data_csv[self.data_config['y_index']])).drop(
-                            columns=[x for x in y_data_csv.columns if x.startswith('Unnamed: ')]).sort_index(ascending=True)
+        self.y_data = self.y_data_csv.set_index(
+                        pd.to_datetime(self.y_data_csv[self.data_config['y_index']])).drop(
+                            columns=[x for x in self.y_data_csv.columns if x.startswith('Unnamed: ')]).drop(columns=[self.data_config['y_index']]).sort_index(ascending=True)
         
         # 编码数据，使用时间序列作为索引，部分读入，防止内存溢出，此处注意，由于存储时是按照日期倒叙存储，所以时间序列是倒叙
         # 先读入的日期是最近的日期，处理时要注意
-        x_data_csv = pd.read_csv(self.data_config['x_filename'], nrows=nrows)
-        self.x_data = x_data_csv.set_index(
-            pd.to_datetime(x_data_csv[self.data_config['x_index']])).drop(
-                columns=[x for x in x_data_csv.columns if x.startswith('Unnamed: ')]).sort_index(ascending=True)
+        self.x_data_csv = pd.read_csv(self.data_config['x_filename'], 
+                                    nrows=nrows,
+                                    usecols=self.data_config['x_columns'])
+        self.x_data = self.x_data_csv.set_index(
+            pd.to_datetime(self.x_data_csv[self.data_config['x_index']])).drop(
+                columns=[x for x in self.x_data_csv.columns if x.startswith('Unnamed: ')]).drop(columns=[self.data_config['x_index']]).sort_index(ascending=True)
 
         self.index_limit = [max(self.x_data.index[0], self.y_data.index[0]), 
                                 min(self.x_data.index[-1], self.y_data.index[-1])]
@@ -340,7 +341,14 @@ class DataLoader():
         # 不过这样会方便做差计算，因为delta(y) = y(t) - y(t-1)就会只有240分钟数据 。
         y_fluctuation = self.y_data - self.y_data.shift(1)
 
-        return self.x_data[x_open_market_index], y_fluctuation[y_open_market_index], self.x_data[x_close_market_index], y_fluctuation[y_close_market_index]
+        final_index =   [
+                        self.x_data[self.x_data.index in x_open_market_index], 
+                        y_fluctuation[y_fluctuation.index in y_open_market_index], 
+                        self.x_data[self.x_data.index in x_close_market_index], 
+                        y_fluctuation[y_fluctuation.index in y_close_market_index]
+                        ]
+
+        return final_index
 
 
     def get_iterator_x_data(self, nrows=3000):
@@ -396,11 +404,21 @@ class DataLoader():
             y是股价，对应于股价的变化，即delta(yt) = y(t) - y(t-1)
             y_tag是一个时间段的标签，用一个7元组表示，代码头部已经给出定义
         '''
-        y_daily_index = self.y_data.index.to_period('D').unique()
-        if x_data[x_data.index==y_daily_index[0]]:
+        open_market_index_start = max(y_open.index.min, x_open.index.min)
+        open_market_index_end = min(y_open.index.max, x_open.index.max)
+        close_market_index_start = max(y_close.index.min, x_close.index.min)
+        close_market_index_end = min(y_close.index.max, x_close.index.max)
+        # 通过y索引 先确定整个生成数据集的索引范围
+        open_market_datetime = pd.to_datetime(open_market_index_start, open_market_index_end)
+        close_market_datetime = dt.datetime(close_market_index_start, close_market_index_end)
+        y_daily_index = y_open.index.to_period("d").unique()
+        # 通过y索引 建立按日循环的生成器
+        for day in y_daily_index:
+            pass
+        if self.x_data[self.x_data.index==y_daily_index[0]]:
             pass
         # 用股价数据的索引来生成数据
-        for idx in daily_index:
+        for idx in y_daily_index:
             daily_data_x = self.x_data[self.x_data.index.to_period('D') == idx]
             daily_data_y = self.y_data[self.y_data.index.to_period('D') == idx]
             y_open = daily_data_y['open'][0]
@@ -523,7 +541,7 @@ def main():
     config = json.load(open('bin\\seq2seq_model\\seq2seq_config.json', 'r', encoding='utf-8'))
 
     dataloader = DataLoader(config=config, nrows=1000)
-    x_open, y_open, x_close, y_close = dataloader.split_open_close_data()
+    [x_open, y_open, x_close, y_close] = dataloader.split_open_close_data()
     xy_data_generator = dataloader.generate_x_y_data(x_open, y_open, x_close, y_close)
 
     seq2seq_model = Seq2Seq_Model(config)
