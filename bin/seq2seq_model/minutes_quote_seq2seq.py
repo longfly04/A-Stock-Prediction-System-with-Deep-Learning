@@ -216,8 +216,8 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
     seq2seq_model.encoder = encoder
     seq2seq_model.decoder = decoder
 
-    decoded_vec = Flatten(decoded_seq)
-    decoded_vec = Dense(1, activation='tanh')
+    decoded_vec = Flatten()(decoded_seq)
+    decoded_vec = Dense(1, activation='tanh')(decoded_vec)
     seq2vec_model = Model(inputs, [decoded_seq, decoded_vec])
     # 最终模型有1个输入，2个输出
 
@@ -342,10 +342,10 @@ class DataLoader():
         y_fluctuation = self.y_data - self.y_data.shift(1)
 
         final_index =   [
-                        self.x_data[self.x_data.index in x_open_market_index], 
-                        y_fluctuation[y_fluctuation.index in y_open_market_index], 
-                        self.x_data[self.x_data.index in x_close_market_index], 
-                        y_fluctuation[y_fluctuation.index in y_close_market_index]
+                        self.x_data.loc[x_open_market_index], 
+                        y_fluctuation.loc[y_open_market_index], 
+                        self.x_data.loc[x_close_market_index], 
+                        y_fluctuation.loc[y_close_market_index]
                         ]
 
         return final_index
@@ -404,19 +404,60 @@ class DataLoader():
             y是股价，对应于股价的变化，即delta(yt) = y(t) - y(t-1)
             y_tag是一个时间段的标签，用一个7元组表示，代码头部已经给出定义
         '''
-        open_market_index_start = max(y_open.index.min, x_open.index.min)
-        open_market_index_end = min(y_open.index.max, x_open.index.max)
-        close_market_index_start = max(y_close.index.min, x_close.index.min)
-        close_market_index_end = min(y_close.index.max, x_close.index.max)
-        # 通过y索引 先确定整个生成数据集的索引范围
-        open_market_datetime = pd.to_datetime(open_market_index_start, open_market_index_end)
-        close_market_datetime = dt.datetime(close_market_index_start, close_market_index_end)
-        y_daily_index = y_open.index.to_period("d").unique()
-        # 通过y索引 建立按日循环的生成器
-        for day in y_daily_index:
-            pass
-        if self.x_data[self.x_data.index==y_daily_index[0]]:
-            pass
+        # 初始化股市时间
+        open_time = dt.time(9,30)
+        close_time = dt.time(15,0)
+        moon_break_time = dt.time(11,30)
+        moon_open_time = dt.time(13,1)
+
+        # 区分开市和休市时间段，对应于x，y的交集
+        open_market_index_start = max(y_open.index.min(), x_open.index.min())
+        open_market_index_end = min(y_open.index.max(), x_open.index.max())
+        close_market_index_start = max(y_close.index.min(), x_close.index.min())
+        close_market_index_end = min(y_close.index.max(), x_close.index.max())
+
+        # 整个数据集的索引，便于建立x，y对应关系
+        market_start = min(open_market_index_start, close_market_index_start)
+        market_end = max(open_market_index_end, close_market_index_end)
+        market_range = pd.date_range(start=market_start, end=market_end, freq='Min')
+        market_range_daily = pd.date_range(start=market_start, end=market_end, freq="D")
+
+        # 定义数据窗口的参数
+        window_len = self.data_config['sequence_length']
+        open_market_step = self.data_config['open_market_seq_step']
+        close_market_step = self.data_config['close_market_seq_step']
+        open_market_y_len = self.data_config['open_market_tag_len']
+        close_market_y_len = self.data_config['close_market_tag_len']
+
+        # 定义循环用的变量
+        window_start = market_range[0].replace(second=0) - dt.timedelta(minutes=1)
+        window_end = window_start+dt.timedelta(minutes=61)
+
+        y_open_close_idx = [x for x in self.y_data.index if x.time() in [open_time, close_time, moon_break_time, moon_open_time]]
+        y_open_close = self.y_data.loc[y_open_close_idx]
+        y_open_close_delta = y_open_close - y_open_close.shift(1)
+        '''
+        生成训练用数据序列：
+            开市期和休市期使用同一的序列长度，开市以股价序列为标签，休市以隔夜或隔午价格差为标签，
+            通过共享权重的编解码网络分别训练，确保不丢失信息。
+            其中，财经新闻的索引精确到秒，需要进行截断处理，发生分钟内碰撞需要平移处理，发生数据
+            缺失需要填充噪声。
+            股价数据直接使用，注意对齐，并提前保存隔夜差价。
+        '''
+        for right_now in market_range:
+            if self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'morning_open':
+                pass
+            elif self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'afternoon_open':
+                pass
+            elif self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'noon_break':
+                pass
+            elif self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'night_break':
+                pass
+            else:
+                pass
+        
+
+
         # 用股价数据的索引来生成数据
         for idx in y_daily_index:
             daily_data_x = self.x_data[self.x_data.index.to_period('D') == idx]
@@ -430,7 +471,8 @@ class DataLoader():
             y_i = [daily_data_y['trade_time'][0], daily_data_y['trade_time'][-1], y_open, y_close, y_high, y_low, y_volume]
             yield [daily_data_x, daily_data_y, y_i]
 
-    def _fill_blank_x_data(self, dim=768, distribution="normal", distribution_args=[0, 1]):
+
+    def _fill_blank_x_data(self, dim=768, distribution=self.data_config['x_fill_blank'], distribution_args=[0, 1]):
         '''
         使用随机数发生器产生一个dim维的随机数向量
         dim:
@@ -448,6 +490,27 @@ class DataLoader():
         if distribution == 'uniform': # 均匀分布，默认参数（-1，1）
             code = np.random.uniform((distribution_args[0], distribution_args[1], (dim,)))
         return code
+
+    def _in_which_time(self, timeindex):
+        '''
+        Input:
+            timestamp
+        Output:
+            'morning_open','noon_break','afternoon_open','night_break'
+        '''
+        open_time = dt.time(9,30)
+        close_time = dt.time(15,0)
+        moon_break_time = dt.time(11,30)
+        moon_open_time = dt.time(13,1)
+
+        if timeindex.time() >= open_time and timeindex.time() < moon_break_time:
+            return 'morning_open'
+        elif timeindex.time() >= moon_break_time and timeindex.time() < moon_open_time:
+            return 'noon_break'
+        elif timeindex.time() >= moon_open_time and timeindex.time() < close_time:
+            return 'afternoon_open'
+        elif timeindex.time() >= close_time or timeindex.time() < open_time:
+            return 'night_break'
 
 
 class Seq2Seq_Model():
@@ -540,16 +603,13 @@ class Seq2Seq_Model():
 def main():
     config = json.load(open('bin\\seq2seq_model\\seq2seq_config.json', 'r', encoding='utf-8'))
 
-    dataloader = DataLoader(config=config, nrows=1000)
+    dataloader = DataLoader(config=config, nrows=5000)
     [x_open, y_open, x_close, y_close] = dataloader.split_open_close_data()
     xy_data_generator = dataloader.generate_x_y_data(x_open, y_open, x_close, y_close)
-
+    next(xy_data_generator)
     seq2seq_model = Seq2Seq_Model(config)
     seq2seq_model.build_model()
 
-    print(x_data.head(5))
-    print(y_data.head(5))
-    print(y_tag.head(5))
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,6 @@
-A Stock Prediction System with GAN and DRL 
+A Stock Prediction System with Deep Learning 
 ====
-基于机器学习的股市预测系统
+基于深度学习的股市预测系统
 ----
 
 本系统参考了 https://github.com/borisbanushev/stockpredictionai 并尝试在A股市场中预测股价。
@@ -9,7 +9,7 @@ A Stock Prediction System with GAN and DRL
 
 数据来源：https://tushare.pro/
 
-For more information ： https://longfly04.github.io/A-Stock-Prediction-System-with-GAN-and-DRL/
+For more information ： https://longfly04.github.io/A-Stock-Prediction-System-with-Deep-Learning/
 
 # 目录
 

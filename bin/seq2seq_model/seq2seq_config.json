@@ -40,7 +40,7 @@
 				"batch_size":32, 
 				"input_dim":768, 
 				"input_length":60,
-				"hidden_dim":1024, 
+				"hidden_dim":512, 
 				"depth":2, 
 				"broadcast_state":true, 
 				"unroll":false,
