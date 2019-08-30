@@ -410,32 +410,32 @@ class DataLoader():
         moon_break_time = dt.time(11,30)
         moon_open_time = dt.time(13,1)
 
-        # 区分开市和休市时间段，对应于x，y的交集
-        open_market_index_start = max(y_open.index.min(), x_open.index.min())
-        open_market_index_end = min(y_open.index.max(), x_open.index.max())
-        close_market_index_start = max(y_close.index.min(), x_close.index.min())
-        close_market_index_end = min(y_close.index.max(), x_close.index.max())
+        # 区分开市和休市时间段，对应于x，y的交集,data对应于数据，精确到秒
+        open_data_index_start = max(y_open.index.min(), x_open.index.min())
+        open_data_index_end = min(y_open.index.max(), x_open.index.max())
+        close_data_index_start = max(y_close.index.min(), x_close.index.min())
+        close_data_index_end = min(y_close.index.max(), x_close.index.max())
 
-        # 整个数据集的索引，便于建立x，y对应关系
-        market_start = min(open_market_index_start, close_market_index_start)
-        market_end = max(open_market_index_end, close_market_index_end)
-        market_range = pd.date_range(start=market_start, end=market_end, freq='Min')
+        # 整个数据集的索引，便于建立x，y对应关系,market对应于市场，second=0
+        market_start = min(open_data_index_start, close_data_index_start).replace(second=0)
+        market_end = max(open_data_index_end, close_data_index_end).replace(second=0)
+        market_range = pd.date_range(start=market_start, end=market_end+dt.timedelta(minutes=1), freq='Min')
         market_range_daily = pd.date_range(start=market_start, end=market_end, freq="D")
 
         # 定义数据窗口的参数
-        window_len = self.data_config['sequence_length']
+        window_length = self.data_config['sequence_length']
         open_market_step = self.data_config['open_market_seq_step']
         close_market_step = self.data_config['close_market_seq_step']
         open_market_y_len = self.data_config['open_market_tag_len']
         close_market_y_len = self.data_config['close_market_tag_len']
 
-        # 定义循环用的变量
-        window_start = market_range[0].replace(second=0) - dt.timedelta(minutes=1)
-        window_end = window_start+dt.timedelta(minutes=61)
-
+        # 定义循环用的变量，end = start + delta
+        window_start = market_range[0]
+        window_duration = dt.timedelta(minutes=window_len)
         y_open_close_idx = [x for x in self.y_data.index if x.time() in [open_time, close_time, moon_break_time, moon_open_time]]
         y_open_close = self.y_data.loc[y_open_close_idx]
         y_open_close_delta = y_open_close - y_open_close.shift(1)
+
         '''
         生成训练用数据序列：
             开市期和休市期使用同一的序列长度，开市以股价序列为标签，休市以隔夜或隔午价格差为标签，
@@ -444,17 +444,51 @@ class DataLoader():
             缺失需要填充噪声。
             股价数据直接使用，注意对齐，并提前保存隔夜差价。
         '''
-        for right_now in market_range:
-            if self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'morning_open':
-                pass
-            elif self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'afternoon_open':
-                pass
-            elif self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'noon_break':
-                pass
-            elif self._in_which_time(right_now) == self._in_which_time(right_now + dt.timedelta(minutes=window_len)) == 'night_break':
-                pass
+        while window_start in market_range:
+            if self._in_which_time(window_start) == self._in_which_time(window_start + window_duration) == 'morning_open':
+                # 上午开市
+                x_idx = [x for x in self.x_data.index if x >= window_start and x < window_start + window_duration]
+                window_x_data = self.x_data.loc[x_idx]
+                y_idx = [x for x in self.y_data.index if x >= window_start and x < window_start + window_duration]
+                window_y_data = y_open_close_delta.loc[y_idx]
+                if window_length > window_x_data.shape[0]:
+                    # 如果出现x数据空缺，就需要人工填充数据，避免x的index出现重复，需要把x的index截断到分钟
+                    window_x_idx = window_x_data.index.map(lambda x: x.replace(second=0))
+                    if window_x_idx.duplicate():
+                        # 如果有碰撞，那就进行移位操作
+                        pass
+                    window_x_data = window_x_data.reset_index(window_x_idx)
+                    window_idx = pd.date_range(start=window_start, end=window_start + window_duration, freq='Min')
+                    
+
+
+
+                elif window_length < window_x_data.shape[0]:
+                    # 如果出现x数据居然多于分钟股价数据，那就剪裁一下
+                    window_y_data = window_y_data.iloc[:window_length]
+
+                window_start = window_start + dt.timedelta(minutes=open_market_step)
+
+            elif self._in_which_time(window_start) == self._in_which_time(window_start + window_duration) == 'afternoon_open':
+                # 下午开市
+
+
+                window_start = window_start + dt.timedelta(minutes=open_market_step)
+
+            elif self._in_which_time(window_start) == self._in_which_time(window_start + window_duration) == 'noon_break':
+                # 中午休市
+
+
+                window_start = window_start + dt.timedelta(minutes=close_market_step)
+
+            elif self._in_which_time(window_start) == self._in_which_time(window_start + window_duration) == 'night_break':
+                # 夜间休市
+
+
+                window_start = window_start + dt.timedelta(minute=close_market_step)
+
             else:
-                pass
+                window_start = window_start + dt.timedelta(minute=min(open_market_step, close_market_step))
         
 
 
