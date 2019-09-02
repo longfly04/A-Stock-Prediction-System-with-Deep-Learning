@@ -16,11 +16,15 @@ from numpy import newaxis
 import argparse
 import matplotlib.pyplot as plt
 
+import sys
+sys.path.append(
+    'C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
+
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers import (Activation, Bidirectional, Dense, Dropout, Input,
-                          Lambda, TimeDistributed, add, concatenate, multiply)
-from keras.models import Model, Sequential
+                          Lambda, TimeDistributed, add, concatenate, multiply, Flatten)
+from keras.models import Model, Sequential, load_model
 
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
@@ -29,11 +33,7 @@ import recurrentshop
 import seq2seq
 from recurrentshop import LSTMCell, RecurrentSequential
 from recurrentshop.cells import *
-from bin.seq2seq_model.cells import LSTMDecoderCell, AttentionDecoderCell
-
-import sys
-sys.path.append(
-    'C:\\Users\\longf.DESKTOP-7QSFE46\\GitHub\\A-Stock-Prediction-System-with-GAN-and-DRL')
+from bin.seq2seq_model.cells import LSTMDecoderCell
 
 
 def Seq2Seq(output_dim, output_length, batch_input_shape=None,
@@ -202,12 +202,7 @@ def Seq2Seq(output_dim, output_length, batch_input_shape=None,
     seq2seq_model.encoder = encoder
     seq2seq_model.decoder = decoder
 
-    decoded_vec = Flatten()(decoded_seq)
-    decoded_vec = Dense(1, activation='tanh')(decoded_vec)
-    seq2vec_model = Model(inputs, [decoded_seq, decoded_vec])
-    # 最终模型有1个输入，2个输出
-
-    return seq2vec_model
+    return seq2seq_model
 
 
 class DataLoader():
@@ -238,6 +233,9 @@ class DataLoader():
         self.seq_len = seq_len
         self.norm_mode = norm_mode
         self.split = split
+        # 增加波动绝对值和百分比数据
+        self.y_delta_data = data.get(self.y_tag) - data.get(self.y_tag).shift(1)
+        self.y_percent = self.y_delta_data/data.get(self.y_tag)*100
 
         # 数据切分
         self.data_train = data.get(self.feature_cols).values[:i_split]
@@ -246,6 +244,13 @@ class DataLoader():
         self.y_test = data.get(self.y_tag).values[i_split:]
         self.len_train = len(self.data_train)
         self.len_test = len(self.data_test)
+
+        # 设置训练和预测数据，y的波动绝对值和百分比
+        self.y_train = self.y_delta_data.values[:i_split]
+        self.y_test = self.y_delta_data.values[i_split:]
+
+        self.y_train = self.y_percent.values[:i_split]
+        self.y_test = self.y_percent.values[i_split:]
 
         self.normalised_data = self.normalise_data(
             data)  # 使用全局标准化，确保训练和测试集归属于相同的分布，
@@ -263,7 +268,7 @@ class DataLoader():
             y_train 
             y_test
         '''
-        y_ = data.get(self.y_tag).values
+        y_ = self.y_delta_data
         x_data = data.get(self.feature_cols).values
         x_data = self.normalise_data(x_data)
         y_seq = []
@@ -286,6 +291,9 @@ class DataLoader():
             i = range(0, int(len(data_test)), self.seq_len - self.window_split)
             data_test = data_test[i, :, :]
             y_test = y_test[i, :]
+
+        y_train = y_train[:, :, newaxis]
+        y_test = y_test[:, :, newaxis]
 
         return data_train, data_test, y_train, y_test
 
@@ -369,20 +377,22 @@ class Timer():
         print('Time taken: %s' % (end_dt - self.start_dt))
 
 
-class Seq2Seq_Model():
+class Seq2Seq_Model(Model):
     '''
     seq2seq:
         利用seq2seq模型，对编码的新闻序列建模并
         训练出预测分钟涨跌股价模型
     '''
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         self.model_config = config['model']
         self.training_config = config['training']
+        super(Seq2Seq_Model, self).__init__(**kwargs)
+
 
     def load_model(self, filepath):
         print('[Model] Loading model from file %s' % filepath)
-        # self.model = load_model(filepath)
+        self.model = load_model(filepath)
 
     def build_model(self):
         timer = Timer()
@@ -416,13 +426,13 @@ class Seq2Seq_Model():
         timer.start()
         print('[Model] Training Started')
         print('[Model] %s epochs, %s batch size' % (epochs, batch_size))
-
-        save_fname = os.path.join(
-            save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%Y%m%d-%H:%M:%S'), str(epochs)))
+        # 模型的参数保存下来
+        save_fname = os.path.join(save_dir, '%s-e%s.h5' % (dt.datetime.now().strftime('%Y%m%d-%H%M%S'), str(epochs)))
         callbacks = [
             EarlyStopping(monitor='val_loss', patience=2),
-            ModelCheckpoint(filepath=save_fname,
-                            monitor='val_loss', save_best_only=True)
+            # 使用early stop防止过拟合 patience是可以忍耐多少个epoch，monitor所监控的变量没有提升
+            ModelCheckpoint(filepath=save_fname, monitor='val_loss', save_best_only=True)
+            # 监测验证集误差这个变量，当监测值有改进的时候才保存当前模型，不仅保存权重，也保存模型结构
         ]
         self.model.fit(
             x,
@@ -458,9 +468,64 @@ class Seq2Seq_Model():
             callbacks=callbacks,
             workers=1
         )
-
+        self.model.save(save_fname)
         print('[Model] Training Completed. Model saved as %s' % save_fname)
         timer.stop()
+
+    def predict_sequences_multiple(self, x_test, window_size, prediction_len):
+        # 预测test_len/(seq_len * predict_window)个时间步的股价 这个预测跟训练的时间步吻合 并且有一定的实际应用价值
+        print('[Model] Predicting Sequences Multiple...')
+        prediction_seqs = []
+        for i in range(int(len(x_test))):
+            curr_slice = x_test[i]
+            prediction_seqs.append(
+                self.model.predict(curr_slice[newaxis, :, :]))
+        prediction = np.array(prediction_seqs).reshape(
+            prediction_len * len(prediction_seqs))
+        prediction = self.rectify_predict(prediction, window_size=window_size)
+        return prediction
+
+    def predict_sequence_overlap(self, x_test, window_size):
+        # 使用重叠的时间窗口预测股价，并在重叠处使用平均值削弱噪声的影响
+        print('[Model] Predicting Sequences Average...')
+        # 记录预测结果
+        prediction_seqs = []
+
+        for i in range(int(len(x_test))):
+            curr_slice = x_test[i, :, :]
+            predicted = self.model.predict(curr_slice[newaxis, :, :])
+            prediction_seqs.append(predicted)
+        prediction_seqs = np.array(prediction_seqs).reshape(
+            int(len(x_test)), window_size)
+        prediction_matrix = np.zeros(
+            [int(len(x_test)), int(len(x_test))+window_size-1])
+        # 将窗口数据按照实际的时间起始点平移赋值给0矩阵，下一步进行按列求和取平均
+        for i in range(int(len(x_test))):
+            prediction_matrix[i, i:i+window_size] = prediction_seqs[i, :]
+        # 对矩阵按列相加
+        prediction = prediction_matrix.sum(axis=0)
+        # 取平均值 前window_size和后window_size个数据的分母是变化的 中间都是除以window_size
+        for i in range(int(len(prediction))):
+            if i >= window_size and i <= len(prediction)-window_size:
+                prediction[i] = prediction[i]/window_size
+            elif i < window_size:
+                prediction[i] = prediction[i]/(i+1)
+            elif i > len(prediction)-window_size:
+                prediction[i] = prediction[i]/(len(prediction)-i)
+        return prediction
+
+    def rectify_predict(self, prediction, window_size):
+        # 对窗口预测的股价进行修正 防止突破涨跌停板限制
+        for i in range(int(len(prediction))-1):
+            if prediction[i+1] > prediction[i] * 1.1:
+                # 如果预测结果突破了涨停板限制 将后面一个窗口的数据同时赋值 相当于在这个窗口衔接处经历了一个涨停板
+                prediction[i+1:i+window_size] = prediction[i+1:i +
+                                                           window_size] - (prediction[i+1] - prediction[i] * 1.1)
+            elif prediction[i+1] < prediction[i] * 0.9:
+                # 如果预测结果突破了跌停板限制 将后面一个窗口的数据同时赋值 相当于在这个窗口衔接处经历了一个跌停板
+                prediction[i+1:i+window_size] = prediction[i+1:i +
+                                                           window_size] + (prediction[i] * 0.9 - prediction[i+1])
+        return prediction
 
 
 class LSTM_Model():
@@ -744,11 +809,10 @@ def parse_args():  # 处理参数 分别是加载已经保存好的模型的路�
 def main():
     args = parse_args()
     configs = json.load(
-        open('bin\\models\\lstm_modified_config.json', 'r', encoding='utf-8'))
+        open('bin\\lstm_model\\seq2seq_on_daily_indicators_config.json', 'r', encoding='utf-8'))
     if not os.path.exists(configs['model']['save_dir']):
         os.makedirs(configs['model']['save_dir'])
-    # 为了充分利用特征集的所有特征，不再仅仅使用收盘价和成交量
-    file_name = 'dataset\\Feature_engineering_20190624_083438.csv'
+    file_name = configs['data']['filename']
     data_csv = read_data(file_name)
     data_raw = get_data_statistics(data_csv, fill_inf=True)
     features = np.array(data_raw.columns).astype(str).tolist()
@@ -767,8 +831,8 @@ def main():
 
     # 参数中是否加载已经训练好的模型
     if args.loadfile == "":
-        model = LSTM_Model()
-        model.build_model(configs)
+        model = Seq2Seq_Model(configs)
+        model.build_model()
         # x, y = data.get_train_data()
         # 在内存中进行训练
         model.train(
@@ -776,11 +840,22 @@ def main():
             y,
             epochs=configs['training']['epochs'],
             batch_size=configs['training']['batch_size'],
-            save_dir=configs['model']['save_dir']
+            save_dir=configs['model']['save_dir'],
+            validation_split=configs['training']['validation_split']
         )
     else:
-        model = LSTM_Model()
+        model = Seq2Seq_Model(configs)
         model.load_model(args.loadfile)
+
+    # 由于model训练之后，预测样本也需要使用相同的batch size，所以这里我们使用复制权重的方法赋予新模型训练出的权重，但是使用
+    # batch size =1 为了便于预测
+
+    trained_weights = model.get_weights() 
+    new_configs = configs
+    new_configs['model']['hyperparameters']['batch_size'] = 1
+    new_model = Seq2Seq_Model(new_configs)
+    new_model.build_model()
+    new_model.set_weights(trained_weights)
 
     # 根据外部参数决定是否使用滑动窗口的测试数据
     overlap = True if args.predict_mode == "avg" else False
@@ -788,12 +863,13 @@ def main():
 
     # 如果使用覆盖的测试方法，那么测试集会使用滑动窗口进行预测，并在同一个点处进行平均，以消除噪声的影响。
     if overlap:
-        predictions = model.predict_sequence_overlap(
+        predictions = new_model.predict_sequence_overlap(
             x_test, configs['data']['sequence_length'])
     else:
-        predictions = model.predict_sequences_multiple(x_test, configs['data']['sequence_length'], int(
+        predictions = new_model.predict_sequences_multiple(x_test, configs['data']['sequence_length'], int(
             configs['data']['sequence_length']*configs['data']['predict_window']))
-    plot_results(predictions, data.y_test, configs['data']['sequence_length'])
+    y_plot = y_test.reshape(y_test.shape[0]*y_test.shape[1]*y_test.shape[2],)
+    plot_results(predictions, y_plot, configs['data']['sequence_length'])
 
 
 if __name__ == '__main__':
