@@ -433,7 +433,7 @@ def parse_args(): # 处理参数 分别是加载已经保存好的模型的路�
 
 def main():
     args = parse_args()
-    configs = json.load(open('bin\\models\\lstm_modified_config.json', 'r', encoding='utf-8'))
+    configs = json.load(open('bin\\lstm_model\\lstm_modified_config.json', 'r', encoding='utf-8'))
     if not os.path.exists(configs['model']['save_dir']): os.makedirs(configs['model']['save_dir'])
     # 为了充分利用特征集的所有特征，不再仅仅使用收盘价和成交量
     file_name = 'dataset\\Feature_engineering_20190624_083438.csv'
