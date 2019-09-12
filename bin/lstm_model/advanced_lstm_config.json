@@ -33,34 +33,49 @@
 		"save":true,
 		"save_dir":"saved_models",
 		"load":false,
-		"load_model_path":"saved_models\\20190912-201632-epochs50.h5",
+		"load_model_path":"saved_models\\20190911-092424-epochs50.h5",
 		"tensorboard_dir":"log/",
 		"generative":false
 	},
-	"model":{
+	"model": {
 		"loss": "mse",
-		"optimizer": "adam",
+		"optimizer": "rmsprop",
 		"plot_model":true,
-		"plot_model_path":"_tcn_model.png",
-		"hyperparameters": {
-			"nb_filters":128,
-            "kernel_size":3,
-            "nb_stacks":2,
-            "dilations":[1, 2, 4, 8, 16, 32],
-            "padding":"causal",
-            "use_skip_connections":true,
-            "dropout_rate":0.2,
-            "return_sequences":true,
-            "activation":"tanh",
-            "name":"time_series_prediction_tcn",
-            "kernel_initializer":"he_normal",
-            "use_batch_norm":false
-		}
-	},
-	"visualise":{
-		"moving_avg":false,
-		"title":"Stock price prediction with tcn",
-		"plot_loss":false,
-		"plot_prediction":true
+		"plot_model_path":"_lstm_model.png",
+		"layers": [
+			{
+				"type": "lstm",
+				"neurons": 256,
+				"input_timesteps": 45,
+				"input_dim": 489,
+				"return_seq": true
+			},
+			{
+				"type": "dropout",
+				"rate": 0.4
+			},
+			{
+				"type": "lstm",
+				"neurons": 256,
+				"return_seq": true
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": true
+			},
+			{
+				"type": "dropout",
+				"rate": 0.4
+			},
+			{
+				"type": "flatten"
+			},
+			{
+				"type": "dense",
+				"neurons": 5,
+				"activation": "linear"
+			}
+		]
 	}
 }
