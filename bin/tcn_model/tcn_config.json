@@ -18,7 +18,7 @@
 		"target_name":"daily_close",
 		"target_dim":1,
 		"target_length": 5,
-		"target_mode":"real",
+		"target_mode":"diff",
 
 		"fill_null":null,
 		"train_test_split": 0.9,

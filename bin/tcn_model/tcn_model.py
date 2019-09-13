@@ -453,8 +453,9 @@ class TCN_Model(Model):
         print('[Model] Training Completed.')
         timer.stop()
 
-    def L2_regular(self, matrix):
-        return 1/(1 + K.square(matrix)) 
+    def L2_regular(self, output):
+        # 这种正则化方式有问题
+        return 1/(0.01 + K.sum(K.abs(output)))
 
     def predict_multistage(self, x_test):
         predictions = []
